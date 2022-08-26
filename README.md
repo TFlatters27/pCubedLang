@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
- <img height=75% width=75% src="p_cubed.png" alt="example"></a>
+ <img height=75% width=75% src="res/p_cubed.png" alt="example"></a>
 </p>
 
 <h3 align="center">pCubed | custom programming language</h3>
