@@ -1,1 +1,0 @@
-#This project will be the pseudocode programming language
