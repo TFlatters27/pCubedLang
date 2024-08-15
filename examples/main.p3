@@ -1,0 +1,11 @@
+
+
+
+
+
+OUTPUT "Enter a number:"
+INPUT number
+OUTPUT "Your number is" + number
+
+
+
