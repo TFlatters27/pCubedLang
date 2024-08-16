@@ -66,14 +66,14 @@ token_ *lexer_skip(lexer_ *lexer)
 
       if (lexer->current_indent_level > lexer->previous_indent_level)
       {
-        return init_token(INDENT, NULL);
+        return init_token(TOKEN_INDENT, NULL);
       }
       else if (lexer->current_indent_level < lexer->previous_indent_level)
       {
-        return init_token(DEDENT, NULL);
+        return init_token(TOKEN_DEDENT, NULL);
       }
 
-      return init_token(END_OF_LINE, NULL);
+      return init_token(TOKEN_END_OF_LINE, NULL);
     }
 
     lexer_progress(lexer);
@@ -104,27 +104,27 @@ token_ *lexer_next(lexer_ *lexer)
     {
       lexer_progress(lexer); // progress past '<'
       lexer_progress(lexer); // progress past '-'
-      return init_token(ASSIGNMENT, "<-");
+      return init_token(TOKEN_ASSIGNMENT, "<-");
     }
 
     switch (lexer->c)
     {
     case '=':
-      return lexer_collect_token(lexer, init_token(OPERATOR, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_RELATIONAL_OPERATOR, lexer_get_char_as_string(lexer)));
       break;
     case '(':
-      return lexer_collect_token(lexer, init_token(PARENTHESIS, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_PARENTHESIS, lexer_get_char_as_string(lexer)));
       break;
     case ')':
-      return lexer_collect_token(lexer, init_token(PARENTHESIS, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_PARENTHESIS, lexer_get_char_as_string(lexer)));
       break;
     case ',':
-      return lexer_collect_token(lexer, init_token(OPERATOR, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_RELATIONAL_OPERATOR, lexer_get_char_as_string(lexer)));
       break;
     }
   }
 
-  return (void *)0;
+  return NULL;
 }
 
 token_ *lexer_collect_str(lexer_ *lexer)
@@ -145,7 +145,7 @@ token_ *lexer_collect_str(lexer_ *lexer)
 
   lexer_progress(lexer);
 
-  return init_token(STRING_LITERAL, value);
+  return init_token(TOKEN_STRING_LITERAL, value);
 }
 
 token_ *lexer_collect_alphanum(lexer_ *lexer)
@@ -162,7 +162,7 @@ token_ *lexer_collect_alphanum(lexer_ *lexer)
     lexer_progress(lexer);
   }
 
-  return init_token(IDENTIFIER, value);
+  return init_token(TOKEN_IDENTIFIER, value);
 }
 
 token_ *lexer_collect_token(lexer_ *lexer, token_ *token)

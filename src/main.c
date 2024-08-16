@@ -4,15 +4,15 @@
 
 int main()
 {
-  char *file_contents = "OUTPUT \"Enter a number:\"\nINPUT number\nOUTPUT \"Your number is\" + number";
+  char *file_contents = "OUTPUT \"Enter a number:\"\nINPUT number\nOUTPUT \"Your number is\"";
 
   // Initialize the lexer with the file contents
   lexer_ *lexer = init_lexer(file_contents);
-  token_ *token = (void *)0;
+  token_ *token = NULL;
 
-  while ((token = lexer_next(lexer)) != (void *)0)
+  while ((token = lexer_next(lexer)) != NULL)
   {
-    printf("TOKEN(%d,%s)\n", token->type, token->value);
+    printf("TOKEN(%s,%s)\n", token_type_to_string(token->type), token->value);
   }
 
   return 0;
