@@ -50,8 +50,18 @@ void lexer_progress(lexer_ *lexer)
  */
 token_ *lexer_skip(lexer_ *lexer)
 {
-  while (lexer->c == ' ' || lexer->c == '\t' || lexer->c == '\n')
+  while (lexer->c == ' ' || lexer->c == '\t' || lexer->c == '\n' || lexer->c == '#')
   {
+    // Skip comments starting with '#'
+    if (lexer->c == '#')
+    {
+      // Skip characters until a newline or end of string is found
+      while (lexer->c != '\n' && lexer->c != '\0')
+      {
+        lexer_progress(lexer);
+      }
+    }
+
     if (lexer->c == '\n')
     {
       lexer_progress(lexer);
@@ -106,20 +116,21 @@ token_ *lexer_next(lexer_ *lexer)
 {
   while (lexer->c != '\0' && lexer->index < strlen(lexer->contents))
   {
-    if (lexer->c == ' ' || lexer->c == '\t' || lexer->c == '\n')
+    // Skip spaces, tabs, newlines, and comments
+    if (lexer->c == ' ' || lexer->c == '\t' || lexer->c == '\n' || lexer->c == '#')
     {
       token_ *skipped = lexer_skip(lexer);
       if (skipped)
         return skipped;
     }
 
-    if (isalnum(lexer->c))
+    if (isalnum(lexer->c) || lexer->c == '_')
       return lexer_collect_alphanum(lexer);
 
     if (lexer->c == '"')
       return lexer_collect_str(lexer);
 
-    // Handle the assignment operator '<-'
+    // Handle multi-character operators and special cases
     if (lexer->c == '<' && lexer->contents[lexer->index + 1] == '-')
     {
       lexer_progress(lexer); // progress past '<'
@@ -127,17 +138,55 @@ token_ *lexer_next(lexer_ *lexer)
       return init_token(TOKEN_ASSIGNMENT, "<-");
     }
 
+    if (lexer->c == '<' && lexer->contents[lexer->index + 1] == '=')
+    {
+      lexer_progress(lexer); // progress past '<'
+      lexer_progress(lexer); // progress past '='
+      return init_token(TOKEN_LE, "<=");
+    }
+
+    if (lexer->c == '>' && lexer->contents[lexer->index + 1] == '=')
+    {
+      lexer_progress(lexer); // progress past '>'
+      lexer_progress(lexer); // progress past '='
+      return init_token(TOKEN_GE, ">=");
+    }
+
+    if (lexer->c == '!' && lexer->contents[lexer->index + 1] == '=')
+    {
+      lexer_progress(lexer); // progress past '!'
+      lexer_progress(lexer); // progress past '='
+      return init_token(TOKEN_NE, "!=");
+    }
+
     switch (lexer->c)
     {
+    case '+':
+      return lexer_collect_token(lexer, init_token(TOKEN_PLUS, lexer_get_char_as_string(lexer)));
+    case '-':
+      return lexer_collect_token(lexer, init_token(TOKEN_MINUS, lexer_get_char_as_string(lexer)));
+    case '*':
+      return lexer_collect_token(lexer, init_token(TOKEN_MUL, lexer_get_char_as_string(lexer)));
+    case '/':
+      return lexer_collect_token(lexer, init_token(TOKEN_DIV, lexer_get_char_as_string(lexer)));
+    case '<':
+      return lexer_collect_token(lexer, init_token(TOKEN_LT, lexer_get_char_as_string(lexer)));
+    case '>':
+      return lexer_collect_token(lexer, init_token(TOKEN_GT, lexer_get_char_as_string(lexer)));
+    case '=':
+      return lexer_collect_token(lexer, init_token(TOKEN_EQ, lexer_get_char_as_string(lexer)));
     case '(':
       return lexer_collect_token(lexer, init_token(TOKEN_LPAREN, lexer_get_char_as_string(lexer)));
-      break;
     case ')':
       return lexer_collect_token(lexer, init_token(TOKEN_RPAREN, lexer_get_char_as_string(lexer)));
-      break;
+    case '[':
+      return lexer_collect_token(lexer, init_token(TOKEN_LBRACKET, lexer_get_char_as_string(lexer)));
+    case ']':
+      return lexer_collect_token(lexer, init_token(TOKEN_RBRACKET, lexer_get_char_as_string(lexer)));
     case ',':
       return lexer_collect_token(lexer, init_token(TOKEN_COMMA, lexer_get_char_as_string(lexer)));
-      break;
+    case ':':
+      return lexer_collect_token(lexer, init_token(TOKEN_COLON, lexer_get_char_as_string(lexer)));
     }
   }
 
@@ -170,7 +219,8 @@ token_ *lexer_collect_alphanum(lexer_ *lexer)
   char *value = calloc(1, sizeof(char));
   value[0] = '\0';
 
-  while (isalnum(lexer->c))
+  // Loop while the character is alphanumeric or an underscore
+  while (isalnum(lexer->c) || lexer->c == '_')
   {
     char *s = lexer_get_char_as_string(lexer);
     value = realloc(value, (strlen(value) + strlen(s) + 1) * sizeof(char));

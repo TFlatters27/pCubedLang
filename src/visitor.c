@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
-static ast_ *builtin_subroutine_print(visitor_ *visitor, ast_ **args, int args_size)
+// Built-in subroutine for print
+static ast_ *builtin_subroutine_output(visitor_ *visitor, ast_ **args, int args_size)
 {
   for (int i = 0; i < args_size; i++)
   {
@@ -23,6 +24,7 @@ static ast_ *builtin_subroutine_print(visitor_ *visitor, ast_ **args, int args_s
   return init_ast(AST_NOOP);
 }
 
+// Built-in subroutine for exit
 static ast_ *builtin_subroutine_exit(visitor_ *visitor, ast_ **args, int args_size)
 {
   for (int i = 0; i < args_size; i++)
@@ -44,6 +46,7 @@ static ast_ *builtin_subroutine_exit(visitor_ *visitor, ast_ **args, int args_si
   return init_ast(AST_NOOP);
 }
 
+// Built-in subroutine for clearing the console
 static ast_ *builtin_subroutine_clear(visitor_ *visitor, ast_ **args, int args_size)
 {
   for (int i = 0; i < args_size; i++)
@@ -64,38 +67,32 @@ static ast_ *builtin_subroutine_clear(visitor_ *visitor, ast_ **args, int args_s
   return init_ast(AST_NOOP);
 }
 
+// Initialize the visitor
 visitor_ *init_visitor()
 {
   visitor_ *visitor = calloc(1, sizeof(struct VISITOR_STRUCT));
-
   return visitor;
 }
 
+// Define the main visit function
 ast_ *visitor_visit(visitor_ *visitor, ast_ *node)
 {
   switch (node->type)
   {
   case AST_VARIABLE_DEFINITION:
     return visitor_visit_variable_definition(visitor, node);
-    break;
   case AST_SUBROUTINE_DEFINITION:
     return visitor_visit_subroutine_definition(visitor, node);
-    break;
   case AST_VARIABLE:
     return visitor_visit_variable(visitor, node);
-    break;
   case AST_SUBROUTINE_CALL:
     return visitor_visit_subroutine_call(visitor, node);
-    break;
   case AST_STRING:
     return visitor_visit_string(visitor, node);
-    break;
   case AST_COMPOUND:
     return visitor_visit_compound(visitor, node);
-    break;
   case AST_NOOP:
     return node;
-    break;
   }
 
   printf("Uncaught statement of type `%d`\n", node->type);
@@ -104,57 +101,51 @@ ast_ *visitor_visit(visitor_ *visitor, ast_ *node)
   return init_ast(AST_NOOP);
 }
 
+// Handle variable definitions
 ast_ *visitor_visit_variable_definition(visitor_ *visitor, ast_ *node)
 {
-  scope_add_variable_definition(
-      node->scope,
-      node);
-
+  scope_add_variable_definition(node->scope, node);
   return node;
 }
 
+// Handle subroutine definitions
 ast_ *visitor_visit_subroutine_definition(visitor_ *visitor, ast_ *node)
 {
-  scope_add_subroutine_definition(
-      node->scope,
-      node);
-
+  scope_add_subroutine_definition(node->scope, node);
   return node;
 }
 
+// Handle variables
 ast_ *visitor_visit_variable(visitor_ *visitor, ast_ *node)
 {
-  ast_ *vdef = scope_get_variable_definition(
-      node->scope,
-      node->variable_name);
+  ast_ *vdef = scope_get_variable_definition(node->scope, node->variable_name);
 
   if (vdef != (void *)0)
+  {
     return visitor_visit(visitor, vdef->variable_definition_value);
+  }
 
   printf("Undefined variable `%s`\n", node->variable_name);
   exit(1);
 }
 
+// Handle subroutine calls
 ast_ *visitor_visit_subroutine_call(visitor_ *visitor, ast_ *node)
 {
-  if (strcmp(node->subroutine_call_name, "print") == 0)
+  if (strcmp(node->subroutine_call_name, "OUTPUT") == 0)
   {
-    return builtin_subroutine_print(visitor, node->subroutine_call_arguments, node->subroutine_call_arguments_size);
+    return builtin_subroutine_output(visitor, node->subroutine_call_arguments, node->subroutine_call_arguments_size);
   }
-
-  if (strcmp(node->subroutine_call_name, "exit") == 0)
+  if (strcmp(node->subroutine_call_name, "EXIT") == 0)
   {
     return builtin_subroutine_exit(visitor, node->subroutine_call_arguments, node->subroutine_call_arguments_size);
   }
-
-  if (strcmp(node->subroutine_call_name, "clear") == 0)
+  if (strcmp(node->subroutine_call_name, "CLEAR") == 0)
   {
     return builtin_subroutine_clear(visitor, node->subroutine_call_arguments, node->subroutine_call_arguments_size);
   }
 
-  ast_ *fdef = scope_get_subroutine_definition(
-      node->scope,
-      node->subroutine_call_name);
+  ast_ *fdef = scope_get_subroutine_definition(node->scope, node->subroutine_call_name);
 
   if (fdef == (void *)0)
   {
@@ -164,34 +155,34 @@ ast_ *visitor_visit_subroutine_call(visitor_ *visitor, ast_ *node)
 
   for (int i = 0; i < (int)node->subroutine_call_arguments_size; i++)
   {
-    // grab the variable from the subroutine definition arguments
+    // Grab the variable from the subroutine definition arguments
     ast_ *ast_var = (ast_ *)fdef->subroutine_definition_args[i];
 
-    // grab the value from the subroutine call arguments
+    // Grab the value from the subroutine call arguments
     ast_ *ast_value = (ast_ *)node->subroutine_call_arguments[i];
 
-    // create a new variable definition with the value of the argument
-    // in the subroutine call.
+    // Create a new variable definition with the value of the argument in the subroutine call
     ast_ *ast_vardef = init_ast(AST_VARIABLE_DEFINITION);
     ast_vardef->variable_definition_value = ast_value;
 
-    // copy the name from the subroutine definition argument into the new
-    // variable definition
+    // Copy the name from the subroutine definition argument into the new variable definition
     ast_vardef->variable_definition_variable_name = (char *)calloc(strlen(ast_var->variable_name) + 1, sizeof(char));
     strcpy(ast_vardef->variable_definition_variable_name, ast_var->variable_name);
 
-    // push our variable definition into the subroutine body scope.
+    // Push the variable definition into the subroutine body scope
     scope_add_variable_definition(fdef->subroutine_definition_body->scope, ast_vardef);
   }
 
   return visitor_visit(visitor, fdef->subroutine_definition_body);
 }
 
+// Handle strings
 ast_ *visitor_visit_string(visitor_ *visitor, ast_ *node)
 {
   return node;
 }
 
+// Handle compound statements
 ast_ *visitor_visit_compound(visitor_ *visitor, ast_ *node)
 {
   for (int i = 0; i < node->compound_size; i++)

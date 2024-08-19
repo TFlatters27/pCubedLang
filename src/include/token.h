@@ -4,13 +4,25 @@
 enum token_type
 {
   TOKEN_ID,
-  TOKEN_COMMENT,
-  TOKEN_ASSIGNMENT,
+  TOKEN_ASSIGNMENT, // lexer_next : <-
   TOKEN_STRING,
   TOKEN_NEWLINE,
-  TOKEN_LPAREN,
-  TOKEN_RPAREN,
-  TOKEN_COMMA,
+  TOKEN_LPAREN,   // lexer_next : (
+  TOKEN_RPAREN,   // lexer_next : )
+  TOKEN_PLUS,     // lexer_next : +
+  TOKEN_MINUS,    // lexer_next : -
+  TOKEN_MUL,      // lexer_next : *
+  TOKEN_DIV,      // lexer_next : /
+  TOKEN_LT,       // lexer_next : <
+  TOKEN_GT,       // lexer_next : >
+  TOKEN_LE,       // lexer_next : <=
+  TOKEN_GE,       // lexer_next : >=
+  TOKEN_EQ,       // lexer_next : =
+  TOKEN_NE,       // lexer_next : !=
+  TOKEN_COMMA,    // lexer_next : ,
+  TOKEN_COLON,    // lexer_next : :
+  TOKEN_LBRACKET, // lexer_next : [
+  TOKEN_RBRACKET, // lexer_next : ]
   TOKEN_INDENT,
   TOKEN_DEDENT,
   TOKEN_EOF
