@@ -5,38 +5,24 @@ const char *token_type_to_string(enum token_type type)
 {
   switch (type)
   {
+  case TOKEN_ID:
+    return "ID";
   case TOKEN_COMMENT:
     return "COMMENT";
-  case TOKEN_IDENTIFIER:
-    return "IDENTIFIER";
   case TOKEN_ASSIGNMENT:
     return "ASSIGNMENT";
-  case TOKEN_EXPRESSION:
-    return "EXPRESSION";
-  case TOKEN_STRING_LITERAL:
-    return "STRING_LITERAL";
-  case TOKEN_KEYWORD:
-    return "KEYWORD";
-  case TOKEN_WHITESPACE:
-    return "WHITESPACE";
-  case TOKEN_INDENT:
-    return "INDENT";
-  case TOKEN_DEDENT:
-    return "DEDENT";
-  case TOKEN_ARITHMETIC_OPERATOR:
-    return "ARITHMETIC_OPERATOR";
-  case TOKEN_RELATIONAL_OPERATOR:
-    return "RELATIONAL_OPERATOR";
-  case TOKEN_BOOLEAN_OPERATOR:
-    return "BOOLEAN_OPERATOR";
-  case TOKEN_PARENTHESIS:
-    return "PARENTHESIS";
-  case TOKEN_PUNCTUATION:
-    return "PUNCTUATION";
-  case TOKEN_NUMBER_LITERAL:
-    return "NUMBER_LITERAL";
-  case TOKEN_END_OF_LINE:
-    return "END_OF_LINE";
+  case TOKEN_STRING:
+    return "STRING";
+  case TOKEN_NEWLINE:
+    return "NEWLINE";
+  case TOKEN_LPAREN:
+    return "LPAREN";
+  case TOKEN_RPAREN:
+    return "RPAREN";
+  case TOKEN_COMMA:
+    return "COMMA";
+  case TOKEN_EOF:
+    return "EOF";
   default:
     return "UNKNOWN";
   }

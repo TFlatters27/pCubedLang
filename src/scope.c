@@ -5,8 +5,8 @@ scope_ *init_scope()
 {
   scope_ *scope = calloc(1, sizeof(struct SCOPE_STRUCT));
 
-  scope->function_definitions = (void *)0;
-  scope->function_definitions_size = 0;
+  scope->subroutine_definitions = (void *)0;
+  scope->subroutine_definitions_size = 0;
 
   scope->variable_definitions = (void *)0;
   scope->variable_definitions_size = 0;
@@ -14,35 +14,35 @@ scope_ *init_scope()
   return scope;
 }
 
-ast_ *scope_add_function_definition(scope_ *scope, ast_ *fdef)
+ast_ *scope_add_subroutine_definition(scope_ *scope, ast_ *fdef)
 {
-  scope->function_definitions_size += 1;
+  scope->subroutine_definitions_size += 1;
 
-  if (scope->function_definitions == (void *)0)
+  if (scope->subroutine_definitions == (void *)0)
   {
-    scope->function_definitions = calloc(1, sizeof(struct AST_STRUCT *));
+    scope->subroutine_definitions = calloc(1, sizeof(struct AST_STRUCT *));
   }
   else
   {
-    scope->function_definitions =
+    scope->subroutine_definitions =
         realloc(
-            scope->function_definitions,
-            scope->function_definitions_size * sizeof(struct AST_STRUCT **));
+            scope->subroutine_definitions,
+            scope->subroutine_definitions_size * sizeof(struct AST_STRUCT **));
   }
 
-  scope->function_definitions[scope->function_definitions_size - 1] =
+  scope->subroutine_definitions[scope->subroutine_definitions_size - 1] =
       fdef;
 
   return fdef;
 }
 
-ast_ *scope_get_function_definition(scope_ *scope, const char *fname)
+ast_ *scope_get_subroutine_definition(scope_ *scope, const char *fname)
 {
-  for (int i = 0; i < scope->function_definitions_size; i++)
+  for (int i = 0; i < scope->subroutine_definitions_size; i++)
   {
-    ast_ *fdef = scope->function_definitions[i];
+    ast_ *fdef = scope->subroutine_definitions[i];
 
-    if (strcmp(fdef->function_definition_name, fname) == 0)
+    if (strcmp(fdef->subroutine_definition_name, fname) == 0)
     {
       return fdef;
     }

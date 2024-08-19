@@ -28,11 +28,11 @@ ast_ *parser_parse_factor(parser_ *parser, scope_ *scope);
 
 ast_ *parser_parse_term(parser_ *parser, scope_ *scope);
 
-ast_ *parser_parse_function_call(parser_ *parser, scope_ *scope);
+ast_ *parser_parse_subroutine_call(parser_ *parser, scope_ *scope);
 
 ast_ *parser_parse_variable_definition(parser_ *parser, scope_ *scope);
 
-ast_ *parser_parse_function_definition(parser_ *parser, scope_ *scope);
+ast_ *parser_parse_subroutine_definition(parser_ *parser, scope_ *scope);
 
 ast_ *parser_parse_variable(parser_ *parser, scope_ *scope);
 
