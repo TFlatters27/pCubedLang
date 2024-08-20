@@ -1,20 +1,18 @@
-exec = p3.out
+exec = /usr/local/bin/p3
 sources = $(wildcard src/*.c)
 objects = $(sources:.c=.o)
 flags = -g
 
-
 $(exec): $(objects)
-	gcc $(objects) $(flags) -o $(exec)
+	@echo "Compiling and installing p3..."
+	@$(CC) $(objects) $(flags) -o $(exec)
+	@echo "Done."
 
 %.o: %.c include/%.h
-	gcc -c $(flags) $< -o $@
-
-install:
-	make
-	cp ./p3.out /usr/local/bin/p3
+	@$(CC) -c $(flags) $< -o $@
 
 clean:
-	-rm *.out
-	-rm *.o
-	-rm src/*.o
+	@echo "Cleaning up..."
+	@rm -f $(objects)
+	@rm -f $(exec)
+	@echo "Clean complete."
