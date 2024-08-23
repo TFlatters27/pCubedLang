@@ -1,0 +1,98 @@
+# This program demonstrates various elements of AQA pseudo-code
+
+# Constants
+CONSTANT PI <- 3.14159
+CONSTANT MAX_STUDENTS <- 30
+CONSTANT SPEED_OF_LIGHT <- 3e+8
+
+# Variables
+name <- 'Alice'
+age <- 16
+score <- 95.5
+isPassed <- True
+
+# Arrays
+scores <- [85, 90, 88, 92, 95]
+
+# Records
+RECORD Student
+   name : String
+   age : Integer
+   score : Real
+   passed : Boolean
+ENDRECORD
+
+# Create a student record
+student1 <- Student('Bob', 17, 89.5, True)
+
+# Subroutines
+SUBROUTINE printStudentDetails(student)
+   OUTPUT 'Name: ', student.name
+   OUTPUT 'Age: ', student.age
+   OUTPUT 'Score: ', student.score
+   OUTPUT 'Passed: ', student.passed
+ENDSUBROUTINE
+
+# Function to calculate the average score
+SUBROUTINE calculateAverage(scores)
+   total <- 0
+   FOR score IN scores
+      total <- total + score
+   ENDFOR
+   RETURN total DIV LEN(scores)
+ENDSUBROUTINE
+
+# Main Program
+
+# Random number generation
+randomIndex <- RANDOM_INT(0, LEN(scores) - 1)
+OUTPUT 'Random score selected: ', scores[randomIndex]
+
+# Type Conversion
+stringAge <- INT_TO_STRING(age)
+OUTPUT 'Converted age to string: ', stringAge
+
+# String handling
+greeting <- 'Hello, ' + name
+OUTPUT greeting
+
+# Relational and Boolean Operations
+IF age >= 18 THEN
+   OUTPUT 'You are an adult.'
+ELSE IF age >= 13 AND age < 18 THEN
+   OUTPUT 'You are a teenager.'
+ELSE
+   OUTPUT 'You are a child.'
+ENDIF
+
+# Iteration - Indefinite
+counter <- 0
+WHILE counter < 3
+   OUTPUT 'Counter: ', counter
+   counter <- counter + 1
+ENDWHILE
+
+input <- USERINPUT
+
+# Iteration - Definite
+FOR i <- 1 TO input
+   OUTPUT 'Number: ', i
+ENDFOR
+
+# Nested IF-ELSEIF
+IF score >= 90 THEN
+   OUTPUT 'Grade: A'
+ELSE IF score >= 80 THEN
+   OUTPUT 'Grade: B'
+ELSE IF score >= 70 THEN
+   OUTPUT 'Grade: C'
+ELSE
+   OUTPUT 'Grade: D'
+ENDIF
+
+# Subroutine Call
+printStudentDetails(student1)
+
+# Calculate and output average score
+averageScore <- calculateAverage(scores)
+OUTPUT 'Average Score: ', averageScore

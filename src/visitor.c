@@ -12,7 +12,7 @@ static ast_ *builtin_subroutine_output(visitor_ *visitor, ast_ **args, int args_
 
     switch (visited_ast->type)
     {
-    case AST_STRING:
+    case AST_ARRAY:
       printf("%s\n", visited_ast->string_value);
       break;
     default:
@@ -79,7 +79,7 @@ ast_ *visitor_visit(visitor_ *visitor, ast_ *node)
 {
   switch (node->type)
   {
-  case AST_VARIABLE_DEFINITION:
+  case AST_VARIABLE_ASSIGNMENT:
     return visitor_visit_variable_definition(visitor, node);
   case AST_SUBROUTINE_DEFINITION:
     return visitor_visit_subroutine_definition(visitor, node);
@@ -87,7 +87,7 @@ ast_ *visitor_visit(visitor_ *visitor, ast_ *node)
     return visitor_visit_variable(visitor, node);
   case AST_SUBROUTINE_CALL:
     return visitor_visit_subroutine_call(visitor, node);
-  case AST_STRING:
+  case AST_ARRAY:
     return visitor_visit_string(visitor, node);
   case AST_COMPOUND:
     return visitor_visit_compound(visitor, node);
@@ -162,7 +162,7 @@ ast_ *visitor_visit_subroutine_call(visitor_ *visitor, ast_ *node)
     ast_ *ast_value = (ast_ *)node->subroutine_call_arguments[i];
 
     // Create a new variable definition with the value of the argument in the subroutine call
-    ast_ *ast_vardef = init_ast(AST_VARIABLE_DEFINITION);
+    ast_ *ast_vardef = init_ast(AST_VARIABLE_ASSIGNMENT);
     ast_vardef->variable_definition_value = ast_value;
 
     // Copy the name from the subroutine definition argument into the new variable definition

@@ -5,7 +5,9 @@ enum token_type
 {
   TOKEN_ID,
   TOKEN_ASSIGNMENT, // lexer_next : <-
-  TOKEN_STRING,
+  TOKEN_ARRAY,
+  TOKEN_INT,
+  TOKEN_REAL,
   TOKEN_NEWLINE,
   TOKEN_LPAREN,   // lexer_next : (
   TOKEN_RPAREN,   // lexer_next : )
@@ -21,10 +23,9 @@ enum token_type
   TOKEN_NE,       // lexer_next : !=
   TOKEN_COMMA,    // lexer_next : ,
   TOKEN_COLON,    // lexer_next : :
+  TOKEN_FULLSTOP, // lexer_next : .
   TOKEN_LBRACKET, // lexer_next : [
   TOKEN_RBRACKET, // lexer_next : ]
-  TOKEN_INDENT,
-  TOKEN_DEDENT,
   TOKEN_EOF
 };
 

@@ -14,7 +14,7 @@ typedef struct PARSER_STRUCT
 
 parser_ *init_parser(lexer_ *lexer);
 
-void parser_validate_token(parser_ *parser, int token_type);
+void parser_expect(parser_ *parser, enum token_type type);
 
 ast_ *parser_parse(parser_ *parser, scope_ *scope);
 
