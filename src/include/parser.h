@@ -12,6 +12,14 @@ typedef struct PARSER_STRUCT
   scope_ *scope;
 } parser_;
 
+typedef ast_ *(*handler_function)(parser_ *parser, scope_ *scope);
+
+typedef struct
+{
+  const char *keyword;
+  handler_function handler;
+} keyword_map_entry;
+
 parser_ *init_parser(lexer_ *lexer);
 
 void parser_expect(parser_ *parser, enum token_type type);
@@ -21,22 +29,6 @@ ast_ *parser_parse(parser_ *parser, scope_ *scope);
 ast_ *parser_parse_statement(parser_ *parser, scope_ *scope);
 
 ast_ *parser_parse_statements(parser_ *parser, scope_ *scope);
-
-ast_ *parser_parse_expr(parser_ *parser, scope_ *scope);
-
-ast_ *parser_parse_factor(parser_ *parser, scope_ *scope);
-
-ast_ *parser_parse_term(parser_ *parser, scope_ *scope);
-
-ast_ *parser_parse_subroutine_call(parser_ *parser, scope_ *scope);
-
-ast_ *parser_parse_variable_definition(parser_ *parser, scope_ *scope);
-
-ast_ *parser_parse_subroutine_definition(parser_ *parser, scope_ *scope);
-
-ast_ *parser_parse_variable(parser_ *parser, scope_ *scope);
-
-ast_ *parser_parse_string(parser_ *parser, scope_ *scope);
 
 ast_ *parser_parse_id(parser_ *parser, scope_ *scope);
 #endif

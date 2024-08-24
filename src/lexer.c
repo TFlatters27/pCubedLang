@@ -109,7 +109,10 @@ token_ *lexer_next(lexer_ *lexer)
     if (isalnum(lexer->c) || lexer->c == '_')
       return lexer_collect_alphanum(lexer);
 
-    if (lexer->c == '"' || lexer->c == '\'' || lexer->c == '[')
+    if (lexer->c == '"' || lexer->c == '\'')
+      return lexer_collect_string(lexer);
+
+    if (lexer->c == '[')
       return lexer_collect_array(lexer);
 
     // Handle multi-character operators and special cases
@@ -124,47 +127,45 @@ token_ *lexer_next(lexer_ *lexer)
     {
       lexer_progress(lexer); // progress past '<'
       lexer_progress(lexer); // progress past '='
-      return init_token(TOKEN_LE, "<=");
+      return init_token(TOKEN_BIN_OP, "<=");
     }
 
     if (lexer->c == '>' && lexer->contents[lexer->index + 1] == '=')
     {
       lexer_progress(lexer); // progress past '>'
       lexer_progress(lexer); // progress past '='
-      return init_token(TOKEN_GE, ">=");
+      return init_token(TOKEN_BIN_OP, ">=");
     }
 
     if (lexer->c == '!' && lexer->contents[lexer->index + 1] == '=')
     {
       lexer_progress(lexer); // progress past '!'
       lexer_progress(lexer); // progress past '='
-      return init_token(TOKEN_NE, "!=");
+      return init_token(TOKEN_BIN_OP, "!=");
     }
 
     switch (lexer->c)
     {
     case '+':
-      return lexer_collect_token(lexer, init_token(TOKEN_PLUS, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
     case '-':
-      return lexer_collect_token(lexer, init_token(TOKEN_MINUS, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
     case '*':
-      return lexer_collect_token(lexer, init_token(TOKEN_MUL, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
     case '/':
-      return lexer_collect_token(lexer, init_token(TOKEN_DIV, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+    case '^':
+      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
     case '<':
-      return lexer_collect_token(lexer, init_token(TOKEN_LT, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
     case '>':
-      return lexer_collect_token(lexer, init_token(TOKEN_GT, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
     case '=':
-      return lexer_collect_token(lexer, init_token(TOKEN_EQ, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
     case '(':
       return lexer_collect_token(lexer, init_token(TOKEN_LPAREN, lexer_get_char_as_string(lexer)));
     case ')':
       return lexer_collect_token(lexer, init_token(TOKEN_RPAREN, lexer_get_char_as_string(lexer)));
-    case '[':
-      return lexer_collect_token(lexer, init_token(TOKEN_LBRACKET, lexer_get_char_as_string(lexer)));
-    case ']':
-      return lexer_collect_token(lexer, init_token(TOKEN_RBRACKET, lexer_get_char_as_string(lexer)));
     case ',':
       return lexer_collect_token(lexer, init_token(TOKEN_COMMA, lexer_get_char_as_string(lexer)));
     case ':':
@@ -177,43 +178,48 @@ token_ *lexer_next(lexer_ *lexer)
   return init_token(TOKEN_EOF, "\0");
 }
 
-token_ *lexer_collect_array(lexer_ *lexer)
+token_ *lexer_collect_string(lexer_ *lexer)
 {
-  char *value = NULL;
-
   if (lexer->c == '"' || lexer->c == '\'')
   {
-    // Capture the starting quote character (' or ")
     char quote_char = lexer->c;
     lexer_progress(lexer); // Move past the initial quote character
 
-    value = calloc(1, sizeof(char));
+    char *value = calloc(1, sizeof(char));
     value[0] = '\0';
 
-    // Collect string
     while (lexer->c != quote_char && lexer->c != '\0')
     {
-      if (lexer->c == '\\' && lexer->contents[lexer->index + 1] == quote_char)
-      {
-        lexer_progress(lexer); // Skip the backslash
-      }
-
       char *s = lexer_get_char_as_string(lexer);
       value = realloc(value, (strlen(value) + strlen(s) + 1) * sizeof(char));
       strcat(value, s);
-
       lexer_progress(lexer);
     }
 
     lexer_progress(lexer); // Move past the closing quote character
-  }
-  else if (lexer->c == '[')
-  {
-    // Start collecting array
-    lexer_progress(lexer);
 
-    value = calloc(1, sizeof(char));
-    value[0] = '\0';
+    if (quote_char == '\'' && strlen(value) == 1)
+    {
+      return init_token(TOKEN_CHAR, value);
+    }
+    else
+    {
+      return init_token(TOKEN_STRING, value);
+    }
+  }
+  return NULL; // Return NULL if no string/char is detected
+}
+
+token_ *lexer_collect_array(lexer_ *lexer)
+{
+  char *value = NULL;
+
+  if (lexer->c == '[')
+  {
+    lexer_progress(lexer); // Move past the initial '['
+
+    value = calloc(2, sizeof(char)); // Allocate space for the initial bracket and null-terminator
+    strcpy(value, "[");
 
     // Collect array elements as a single string
     while (lexer->c != ']' && lexer->c != '\0')
@@ -224,23 +230,41 @@ token_ *lexer_collect_array(lexer_ *lexer)
         lexer_progress(lexer);
       }
 
-      // Start collecting the current element
-      char *element = calloc(1, sizeof(char));
-      element[0] = '\0';
+      char *element = NULL;
 
-      while (lexer->c != ',' && lexer->c != ']' && lexer->c != '\0')
+      if (lexer->c == '[')
       {
-        char *s = lexer_get_char_as_string(lexer);
-        element = realloc(element, (strlen(element) + strlen(s) + 1) * sizeof(char));
-        strcat(element, s);
+        // Nested array detected, recursively collect it
+        token_ *nested_array_token = lexer_collect_array(lexer);
+        element = nested_array_token->value;
+        free(nested_array_token);
+      }
+      else if (lexer->c == '"' || lexer->c == '\'')
+      {
+        // String or character detected
+        token_ *string_token = lexer_collect_string(lexer);
+        element = string_token->value;
+        free(string_token);
+      }
+      else
+      {
+        element = calloc(1, sizeof(char));
+        element[0] = '\0';
 
-        lexer_progress(lexer);
+        while (lexer->c != ',' && lexer->c != ']' && lexer->c != '\0')
+        {
+          char *s = lexer_get_char_as_string(lexer);
+          element = realloc(element, (strlen(element) + strlen(s) + 1) * sizeof(char));
+          strcat(element, s);
+
+          lexer_progress(lexer);
+        }
       }
 
       // Add the collected element to the value string
-      value = realloc(value, (strlen(value) + strlen(element) + 2) * sizeof(char)); // +2 for comma and null-terminator
-      if (strlen(value) > 0)
-      {
+      value = realloc(value, (strlen(value) + strlen(element) + 3) * sizeof(char)); // +3 for comma, bracket, and null-terminator
+      if (strlen(value) > 1)
+      { // Don't add a comma if it's the first element
         strcat(value, ",");
       }
       strcat(value, element);
@@ -253,10 +277,18 @@ token_ *lexer_collect_array(lexer_ *lexer)
       }
     }
 
-    lexer_progress(lexer);
+    // Close the current array
+    strcat(value, "]");
+    lexer_progress(lexer); // Move past the closing bracket
+
+    token_ *token = malloc(sizeof(token_));
+    token->type = TOKEN_ARRAY;
+    token->value = value;
+
+    return token;
   }
 
-  return init_token(TOKEN_ARRAY, value);
+  return NULL; // Return NULL if no array is detected
 }
 
 token_ *lexer_collect_alphanum(lexer_ *lexer)
@@ -272,6 +304,12 @@ token_ *lexer_collect_alphanum(lexer_ *lexer)
     strcat(value, s);
 
     lexer_progress(lexer);
+  }
+
+  // Check if the collected value is "True" or "False"
+  if (strcmp(value, "True") == 0 || strcmp(value, "False") == 0)
+  {
+    return init_token(TOKEN_BOOL, value);
   }
 
   return init_token(TOKEN_ID, value);

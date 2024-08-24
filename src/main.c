@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "include/lexer.h"
-// #include "include/parser.h"
-// #include "include/scope.h"
+#include "include/parser.h"
+#include "include/scope.h"
 #include "include/io.h"
-// #include "include/visitor.h"
+#include "include/interpreter.h"
 
 int main(int argc, char *argv[])
 {
@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
   // token_ *peeked_token = lexer_peek(lexer);
   // printf("current token %s [%s]\n", token_type_to_string(peeked_token->type), peeked_token->value);
   // printf("lexer: %c @ %d\n", lexer->c, lexer->index);
-  // token_ *peeked_token = lexer_peek(lexer);
-  // printf("current token %s [%s]\n", token_type_to_string(peeked_token->type), peeked_token->value);
+  // token_ *peeked_token_2 = lexer_peek(lexer);
+  // printf("current token %s [%s]\n", token_type_to_string(peeked_token_2->type), peeked_token_2->value);
   // printf("lexer: %c @ %d\n", lexer->c, lexer->index);
 
   // parser_ *parser = init_parser(lexer);

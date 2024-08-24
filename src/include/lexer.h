@@ -22,6 +22,8 @@ token_ *lexer_peek(lexer_ *lexer);
 
 token_ *lexer_collect_array(lexer_ *lexer);
 
+token_ *lexer_collect_string(lexer_ *lexer);
+
 token_ *lexer_collect_alphanum(lexer_ *lexer);
 
 token_ *lexer_collect_number(lexer_ *lexer);

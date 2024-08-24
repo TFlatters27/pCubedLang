@@ -1,0 +1,31 @@
+ast_ *compound = init_ast(AST_COMPOUND);
+  compound->scope = scope;
+  compound->compound_value = NULL;
+  compound->compound_size = 0;
+
+  // Process tokens until NEWLINE or EOF
+  while (parser->current_token->type != TOKEN_NEWLINE && parser->current_token->type != TOKEN_EOF)
+  {
+    // Parse the current token and add it to the compound
+    ast_ *ast_statement = init_ast(AST_NOOP);
+    ast_statement->scope = scope;
+
+    // Add the parsed statement to the compound
+    compound->compound_size += 1;
+    compound->compound_value = realloc(
+        compound->compound_value,
+        compound->compound_size * sizeof(struct AST_STRUCT *));
+    compound->compound_value[compound->compound_size - 1] = ast_statement;
+
+    // Move to the next token
+    parser_expect(parser, parser->current_token->type);
+  }
+
+  // If we've reached a newline, print it and move to the next token
+  if (parser->current_token->type == TOKEN_NEWLINE)
+  {
+    parser_expect(parser, parser->current_token->type);
+    printf("\n");
+  }
+
+  return compound;

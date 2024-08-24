@@ -76,11 +76,6 @@ ast_ *scope_get_variable_definition(scope_ *scope, const char *name)
   for (int i = 0; i < scope->variable_definitions_size; i++)
   {
     ast_ *vdef = scope->variable_definitions[i];
-
-    if (strcmp(vdef->variable_definition_variable_name, name) == 0)
-    {
-      return vdef;
-    }
   }
 
   return (void *)0;

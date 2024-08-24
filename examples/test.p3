@@ -14,6 +14,9 @@ isPassed <- True
 # Arrays
 scores <- [85, 90, 88, 92, 95]
 
+table <- [[1,2],[2,4],[3,6],[4,8]]
+table[3][1] <- 16
+
 # Records
 RECORD Student
    name : String
@@ -81,13 +84,13 @@ ENDFOR
 
 # Nested IF-ELSEIF
 IF score >= 90 THEN
-   OUTPUT 'Grade: A'
+   OUTPUT 'A'
 ELSE IF score >= 80 THEN
-   OUTPUT 'Grade: B'
+   OUTPUT 'B'
 ELSE IF score >= 70 THEN
-   OUTPUT 'Grade: C'
+   OUTPUT 'C'
 ELSE
-   OUTPUT 'Grade: D'
+   OUTPUT 'D'
 ENDIF
 
 # Subroutine Call
