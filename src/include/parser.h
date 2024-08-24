@@ -22,7 +22,7 @@ typedef struct
 
 parser_ *init_parser(lexer_ *lexer);
 
-void parser_expect(parser_ *parser, enum token_type type);
+void parser_expect(parser_ *parser, enum token_type expected_type);
 
 ast_ *parser_parse(parser_ *parser, scope_ *scope);
 

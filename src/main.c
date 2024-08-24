@@ -13,11 +13,11 @@ int main(int argc, char *argv[])
   // Initialize the lexer with the file contents
   lexer_ *lexer = init_lexer(file_contents);
 
-  token_ *token = NULL;
-  while ((token = lexer_next(lexer))->type != TOKEN_EOF)
-  {
-    printf("{%s::%s}\n", token_type_to_string(token->type), token->value);
-  }
+  // token_ *token = NULL;
+  // while ((token = lexer_next(lexer))->type != TOKEN_EOF)
+  // {
+  //   printf("{%s::%s}\n", token_type_to_string(token->type), token->value);
+  // }
 
   // token_ *token = lexer_next(lexer);
   // printf("current token %s [%s]\n", token_type_to_string(token->type), token->value);
@@ -29,11 +29,11 @@ int main(int argc, char *argv[])
   // printf("current token %s [%s]\n", token_type_to_string(peeked_token_2->type), peeked_token_2->value);
   // printf("lexer: %c @ %d\n", lexer->c, lexer->index);
 
-  // parser_ *parser = init_parser(lexer);
-  // scope_ *scope = init_scope();
-  // ast_ *ast = parser_parse(parser, scope);
+  parser_ *parser = init_parser(lexer);
+  scope_ *scope = init_scope();
+  ast_ *ast = parser_parse(parser, scope);
 
-  // printf("AST Type: %s, Compound Size: %zu\n", ast_type_to_string(ast->type), ast->compound_size);
+  printf("AST Type: %s, Compound Size: %zu\n", ast_type_to_string(ast->type), ast->compound_size);
 
   return 0;
 }

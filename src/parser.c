@@ -16,12 +16,13 @@ ast_ *handle_constant(parser_ *parser, scope_ *scope)
   parser_expect(parser, TOKEN_ASSIGNMENT); // {ASSIGNMENT: <-}
 
   ast_variable->variable_assignment_value = parser->current_token->value;
-
-  // value can be String, Char, Integer, Real, Boolean or Array
+  parser_expect(parser, TOKEN_STRING | TOKEN_CHAR | TOKEN_BOOL | TOKEN_INT | TOKEN_REAL | TOKEN_ARRAY);
 
   ast_variable->scope = scope;
 
   parser_expect(parser, TOKEN_NEWLINE);
+
+  printf("CONSTANT %s <- %s\n", ast_variable->variable_assignment_variable_name, ast_variable->variable_assignment_value);
 
   return ast_variable;
 }
@@ -97,10 +98,9 @@ ast_ *parser_parse(parser_ *parser, scope_ *scope)
   return parser_parse_statements(parser, scope);
 }
 
-void parser_expect(parser_ *parser, enum token_type type)
+void parser_expect(parser_ *parser, enum token_type expected_type)
 {
-  printf("%s ", token_type_to_string(parser->current_token->type));
-  if (parser->current_token->type == type)
+  if (parser->current_token->type & expected_type)
   {
     parser->prev_token = parser->current_token;
     parser->current_token = lexer_next(parser->lexer);
@@ -108,7 +108,7 @@ void parser_expect(parser_ *parser, enum token_type type)
   else
   {
     printf(
-        "Unexpected token `%s`, with type %d",
+        "Unexpected token `%s`, with type %d\n",
         parser->current_token->value,
         parser->current_token->type);
     exit(1);
@@ -151,7 +151,7 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
       compound->compound_value[compound->compound_size - 1] = ast_statement;
     }
   }
-  printf("\n");
+  // printf("\n");
 
   return compound;
 }
