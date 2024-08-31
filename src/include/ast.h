@@ -1,89 +1,74 @@
 #ifndef AST_H
 #define AST_H
+
 #include <stdlib.h>
 
+// Enum representing the different types of AST nodes.
 enum ast_type
 {
-  AST_VARIABLE_ASSIGNMENT,
-  AST_VARIABLE,
-  AST_INTEGER_EXPRESSION,
-  AST_BOOLEAN_EXPRESSION,
-  AST_INDEFINITE_ITERATION,
-  AST_DEFINITE_ITERATION,
-  AST_SELECTION,
-  AST_RECORD,
-  AST_SUBROUTINE_DEFINITION,
-  AST_SUBROUTINE_CALL,
-  AST_ARRAY,
-  AST_COMPOUND,
-  AST_NOOP
+    AST_NUM,          // For number literals
+    AST_STRING,       // For string literals
+    AST_BOOL,         // For boolean literals
+    AST_CHAR,         // For character literals
+    AST_ASSIGNMENT,   // For variable assignments
+    AST_INSTANTIATION,// For object instantiation or function calls
+    AST_COMPOUND,     // For compound statements (e.g., blocks of code)
+    AST_NOOP,         // No operation
+    AST_VARIABLE,     // For variable references
+    AST_FUNCTION_CALL,// For function calls
+    AST_ARRAY,        // For array literals
+    AST_BINARY_OP,    // For binary operations (e.g., +, -, *)
+    AST_UNARY_OP      // For unary operations (e.g., -, !)
 };
 
+
+// Structure representing an Abstract Syntax Tree (AST) node.
 typedef struct AST_STRUCT
 {
-  enum ast_type type;
-  struct SCOPE_STRUCT *scope;
-  char* string_value;
+    enum ast_type type;       // Type of AST node
+    struct SCOPE_STRUCT *scope; // Scope the AST node belongs to
 
-  /* AST_VARIABLE_ASSIGNMENT */
-  char *variable_assignment_variable_name;
-  struct AST_STRUCT *variable_assignment_value;
+    /* AST_LITERAL */
+    int int_value;               // Integer value (if this node is an integer literal)
+    char *string_value;          // String value (if this node is a string literal)
+    int bool_value;              // Boolean value (if this node is a boolean literal)
+    char char_value;             // Character value (if this node is a character literal)
 
-  /* AST_VARIABLE */
-  char *variable_name;
+    /* AST_VARIABLE */
+    char *variable_name;         // Name of the variable (if this node is a variable reference)
 
-  /* AST_INTEGER_EXPRESSION */
-  int integer_value;
+    /* AST_ASSIGNMENT */
+    struct AST_STRUCT *value;    // Value to assign (expression being assigned)
+    int constant;
 
-  /* AST_BOOLEAN_EXPRESSION */
-  int boolean_value;
+    /* AST_INSTANTIATION / AST_FUNCTION_CALL */
+    char *instantiated_type;     // Name of the type or function being instantiated/called
+    struct AST_STRUCT **arguments; // List of arguments (for function calls/instantiations)
+    size_t arguments_size;       // Number of arguments
 
-  /* AST_INDEFINITE_ITERATION */
-  struct AST_STRUCT *indefinite_iteration_condition;
-  struct AST_STRUCT *indefinite_iteration_body;
+    /* AST_COMPOUND */
+    struct AST_STRUCT **compound_value; // List of statements (if this node is a compound statement)
+    size_t compound_size;         // Number of statements in the compound
 
-/* AST_DEFINITE_ITERATION */
-  struct AST_STRUCT *definite_iteration_variable;
-  int definite_iteration_start;
-  int definite_iteration_end;
-  int definite_iteration_step;
-  struct AST_STRUCT *definite_iteration_collection;
-  struct AST_STRUCT *definite_iteration_body;
+    /* AST_ARRAY */
+    struct AST_STRUCT **elements; // List of elements (if this node is an array literal)
+    size_t elements_size;         // Number of elements in the array
 
-  /* AST_SELECTION */
-  struct AST_STRUCT *selection_condition;
-  struct AST_STRUCT *selection_true_case;
-  struct AST_STRUCT *selection_false_case;
+    /* AST_BINARY_OP */
+    struct AST_STRUCT *left;      // Left operand (if this node is a binary operation)
+    struct AST_STRUCT *right;     // Right operand (if this node is a binary operation)
+    int binary_op;                       // Operator (e.g., +, -, *)
 
-  /* AST_RECORD */
-  char *record_name;
-  struct AST_STRUCT **record_fields;
-  size_t record_fields_size;
-
-  /* AST_SUBROUTINE_DEFINITION */
-  struct AST_STRUCT *subroutine_definition_body;
-  char *subroutine_definition_name;
-  struct AST_STRUCT **subroutine_definition_args;
-  size_t subroutine_definition_args_size;
-
-  /* AST_SUBROUTINE_CALL */
-  char *subroutine_call_name;
-  struct AST_STRUCT **subroutine_call_arguments;
-  size_t subroutine_call_arguments_size;
-
-  /* AST_ARRAY */
-  struct AST_STRUCT **array_elements;
-  size_t array_size;
-
-  /* AST_COMPOUND */
-  struct AST_STRUCT **compound_value;
-  size_t compound_size;
-
-  /* AST_NOOP */
-  // No operation, no additional fields needed.
+    /* AST_UNARY_OP */
+    struct AST_STRUCT *operand;   // Operand (if this node is a unary operation)
+    int unary_op;                       // Operator (e.g., -, !)
 
 } ast_;
 
-const char *ast_type_to_string(enum ast_type type);
+// Function to initialize an AST node of a given type.
 ast_ *init_ast(enum ast_type type);
+
+// Function to convert an AST type to a string representation.
+const char *ast_type_to_string(enum ast_type type);
+
 #endif

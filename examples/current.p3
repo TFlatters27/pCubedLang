@@ -1,0 +1,25 @@
+# This program demonstrates various elements of AQA pseudo-code
+
+# Constants
+CONSTANT PI <- 3.14159
+CONSTANT CHAR <- 'z'
+CONSTANT CLASS_NAME <- "Year 4"
+CONSTANT SPEED_OF_LIGHT <- 3e+8
+CONSTANT SCORES <- [85, 90, 88, 92, 95]
+CONSTANT ALPHABET <- ['a', 'b', 'c', 'd', 'e', 'f']
+
+# Variables
+name <- 'Alice'
+age <- 16
+score <- 95.5
+isPassed <- True
+
+# Arrays
+table <- [[1,2],[2,4],[3,6],[4,8]]
+
+# Array access
+scores[0] <- 84
+table[3][1] <- 16
+
+# START RECORDS & SUBROUTINES
+

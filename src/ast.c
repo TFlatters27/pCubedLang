@@ -2,7 +2,19 @@
 
 const char *ast_type_to_string(enum ast_type type)
 {
-  return ("Unknown AST type");
+  switch (type)
+  {
+  case AST_ASSIGNMENT:
+    return "AST_ASSIGNMENT";
+  case AST_INSTANTIATION:
+    return "AST_INSTANTIATION";
+  case AST_COMPOUND:
+    return "AST_COMPOUND";
+  case AST_NOOP:
+    return "AST_NOOP";
+  default:
+    return "UNKNOWN_AST_TYPE";
+  }
 }
 
 ast_ *init_ast(enum ast_type type)

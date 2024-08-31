@@ -1,45 +1,60 @@
 #include "include/token.h"
 #include <stdlib.h>
+#include <string.h>
 
-const char *token_type_to_string(enum token_type type)
+const char *token_type_to_string(enum token_type types)
 {
-  switch (type)
+  static char buffer[256];
+  buffer[0] = '\0'; // Start with an empty string
+
+  const struct
   {
-  case TOKEN_ID:
-    return "ID";
-  case TOKEN_ASSIGNMENT:
-    return "ASSIGNMENT";
-  case TOKEN_ARRAY:
-    return "ARRAY";
-  case TOKEN_STRING:
-    return "STRING";
-  case TOKEN_INT:
-    return "INTEGER";
-  case TOKEN_REAL:
-    return "REAL";
-  case TOKEN_BOOL:
-    return "BOOLEAN";
-  case TOKEN_CHAR:
-    return "CHARACTER";
-  case TOKEN_NEWLINE:
-    return "NEWLINE";
-  case TOKEN_LPAREN:
-    return "LPAREN";
-  case TOKEN_RPAREN:
-    return "RPAREN";
-  case TOKEN_BIN_OP:
-    return "BIN_OP";
-  case TOKEN_COMMA:
-    return "COMMA";
-  case TOKEN_COLON:
-    return "COLON";
-  case TOKEN_FULLSTOP:
-    return "FULLSTOP";
-  case TOKEN_EOF:
-    return "EOF";
-  default:
-    return "UNKNOWN";
+    enum token_type type;
+    const char *name;
+  } token_map[] = {
+      {TOKEN_ID, "ID"},
+      {TOKEN_ASSIGNMENT, "ASSIGNMENT"},
+      {TOKEN_STRING, "STRING"},
+      {TOKEN_INT, "INTEGER"},
+      {TOKEN_REAL, "REAL"},
+      {TOKEN_BOOL, "BOOLEAN"},
+      {TOKEN_CHAR, "CHARACTER"},
+      {TOKEN_NEWLINE, "NEWLINE"},
+      {TOKEN_LPAREN, "LEFT PARENTHESIS"},
+      {TOKEN_RPAREN, "RIGHT PARENTHESIS"},
+      {TOKEN_LBRACKET, "LEFT BRACKET"},
+      {TOKEN_RBRACKET, "RIGHT BRACKET"},
+      {TOKEN_BIN_OP, "BINARY OPERATOR"},
+      {TOKEN_COMMA, "COMMA"},
+      {TOKEN_COLON, "COLON"},
+      {TOKEN_FULLSTOP, "FULLSTOP"},
+      {TOKEN_EOF, "END OF FILE"}};
+
+  int remaining_bits = types;
+
+  for (int i = 0; i < sizeof(token_map) / sizeof(token_map[0]); i++)
+  {
+    if (types & token_map[i].type)
+    {
+      strcat(buffer, token_map[i].name);
+      strcat(buffer, " ");
+      remaining_bits &= ~token_map[i].type; // Clear the recognized bit
+    }
   }
+
+  if (remaining_bits)
+  {
+    strcat(buffer, "UNKNOWN");
+  }
+
+  // Remove the trailing space
+  size_t len = strlen(buffer);
+  if (len > 0 && buffer[len - 1] == ' ')
+  {
+    buffer[len - 1] = '\0';
+  }
+
+  return buffer;
 }
 
 token_ *init_token(enum token_type type, char *value)

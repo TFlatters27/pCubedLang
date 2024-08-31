@@ -7,6 +7,8 @@ typedef struct LEXER_STRUCT
   char *contents;
   unsigned int index;
   char c;
+  int line;
+  int column;
 
 } lexer_;
 
@@ -19,8 +21,6 @@ token_ *lexer_skip(lexer_ *lexer);
 token_ *lexer_next(lexer_ *lexer);
 
 token_ *lexer_peek(lexer_ *lexer);
-
-token_ *lexer_collect_array(lexer_ *lexer);
 
 token_ *lexer_collect_string(lexer_ *lexer);
 
