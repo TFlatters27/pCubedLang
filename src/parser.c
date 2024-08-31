@@ -49,16 +49,35 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
   ast_ *expression = NULL;
   token_ *current_token = parser->current_token;
 
+  // Handle potential unary operators at the start
+  if (current_token->type == TOKEN_BIN_OP && strcmp(current_token->value, "-") == 0)
+  {
+    // This is a unary minus, as there is no left-hand side operand yet
+    parser_expect(parser, TOKEN_BIN_OP);
+    expression = init_ast(AST_UNARY_OP);
+    expression->unary_op = strdup(current_token->value);   // Save the operator (in this case, "-")
+    expression->operand = parse_expression(parser, scope); // Parse the right-hand side expression
+    return expression;
+  }
+
+  // Parse primary expressions first
   if (current_token->type & (TOKEN_INT | TOKEN_REAL))
   {
     expression = init_ast(AST_NUM);
-    expression->int_value = atoi(current_token->value);
-    parser_expect(parser, TOKEN_INT | TOKEN_REAL);
+    if (current_token->type == TOKEN_INT)
+    {
+      expression->int_value = atoi(current_token->value);
+    }
+    else
+    {
+      expression->real_value = atof(current_token->value);
+    }
+    parser_expect(parser, current_token->type);
   }
   else if (current_token->type == TOKEN_STRING)
   {
     expression = init_ast(AST_STRING);
-    expression->string_value = current_token->value;
+    expression->string_value = strdup(current_token->value);
     parser_expect(parser, TOKEN_STRING);
   }
   else if (current_token->type == TOKEN_CHAR)
@@ -75,7 +94,7 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
   }
   else if (current_token->type == TOKEN_ID)
   {
-    char *variable_id = current_token->value;
+    char *variable_id = strdup(current_token->value);
     parser_expect(parser, TOKEN_ID);
 
     if (parser->current_token->type == TOKEN_LPAREN)
@@ -129,31 +148,80 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
     expression = parse_expression(parser, scope);
     parser_expect(parser, TOKEN_RPAREN);
   }
-  else if (current_token->type == TOKEN_UN_OP)
-  {
-    expression = init_ast(AST_UNARY_OP);
-    expression->unary_op = current_token->type;
-    parser_expect(parser, current_token->type);
-    expression->operand = parse_expression(parser, scope);
-  }
-  else if (current_token->type == TOKEN_BIN_OP)
-  {
-    ast_ *left = parse_expression(parser, scope);
-    while (parser->current_token->type == TOKEN_BIN_OP)
-    {
-      ast_ *bin_op = init_ast(AST_BINARY_OP);
-      bin_op->left = left;
-      bin_op->binary_op = parser->current_token->type;
-      parser_expect(parser, parser->current_token->type);
-      bin_op->right = parse_expression(parser, scope);
-      left = bin_op;
-    }
-    expression = left;
-  }
   else
   {
     printf("Unexpected token in expression: %s\n", current_token->value);
     exit(1);
+  }
+
+  // Handle binary operations
+  while (parser->current_token->type == TOKEN_BIN_OP)
+  {
+    token_ *op_token = parser->current_token;
+    char *op_value = op_token->value;
+
+    parser_expect(parser, TOKEN_BIN_OP);
+
+    ast_ *right = parse_expression(parser, scope);
+
+    if (strcmp(op_value, "+") == 0)
+    {
+      // Handle '+' for strings, chars, and numbers
+      if (expression->type == right->type)
+      {
+        ast_ *bin_op = init_ast(AST_BINARY_OP);
+        bin_op->left = expression;
+        bin_op->binary_op = strdup(op_value);
+        bin_op->right = right;
+        expression = bin_op;
+      }
+      else
+      {
+        printf("Type mismatch for '+'.\n");
+        exit(1);
+      }
+    }
+    else if (strcmp(op_value, "-") == 0 || strcmp(op_value, "*") == 0 ||
+             strcmp(op_value, "/") == 0 || strcmp(op_value, "^") == 0)
+    {
+      // Handle arithmetic operations for numbers
+      if ((expression->type == AST_NUM || expression->type == AST_REAL) &&
+          (right->type == AST_NUM || right->type == AST_REAL))
+      {
+        ast_ *bin_op = init_ast(AST_BINARY_OP);
+        bin_op->left = expression;
+        bin_op->binary_op = strdup(op_value);
+        bin_op->right = right;
+        expression = bin_op;
+      }
+      else
+      {
+        printf("Invalid operation on types for '%s'.\n", op_value);
+        exit(1);
+      }
+    }
+    else if (strcmp(op_value, "DIV") == 0 || strcmp(op_value, "MOD") == 0)
+    {
+      // Handle DIV and MOD for integers only
+      if (expression->type == AST_NUM && right->type == AST_NUM)
+      {
+        ast_ *bin_op = init_ast(AST_BINARY_OP);
+        bin_op->left = expression;
+        bin_op->binary_op = strdup(op_value);
+        bin_op->right = right;
+        expression = bin_op;
+      }
+      else
+      {
+        printf("'%s' requires both operands to be integers.\n", op_value);
+        exit(1);
+      }
+    }
+    else
+    {
+      printf("Unknown binary operator: %s\n", op_value);
+      exit(1);
+    }
   }
 
   return expression;
@@ -221,10 +289,41 @@ ast_ *handle_variable_assignment(parser_ *parser, scope_ *scope)
 
 ast_ *handle_array_assignment(parser_ *parser, scope_ *scope)
 {
-  printf("Processing array assignment\n");
-  exit(0);
-  return init_ast(AST_NOOP);
+  char *variable_id = parser->current_token->value;
+  parser_expect(parser, TOKEN_ID);
+
+  ast_ **indices = NULL;
+  size_t indices_size = 0;
+
+  while (parser->current_token->type == TOKEN_LBRACKET)
+  {
+    parser_expect(parser, TOKEN_LBRACKET);
+
+    // Parse the index expression
+    ast_ *index_expr = parse_expression(parser, scope);
+
+    // Expect the closing bracket
+    parser_expect(parser, TOKEN_RBRACKET);
+
+    // Add this index expression to the indices array
+    indices_size++;
+    indices = realloc(indices, indices_size * sizeof(ast_ *));
+    indices[indices_size - 1] = index_expr;
+  }
+
+  parser_expect(parser, TOKEN_ASSIGNMENT);
+
+  ast_ *value_expr = parse_expression(parser, scope);
+
+  ast_ *array_assignment_node = init_ast(AST_ASSIGNMENT);
+  array_assignment_node->variable_name = variable_id;
+  array_assignment_node->value = value_expr;
+  array_assignment_node->elements = indices;
+  array_assignment_node->elements_size = indices_size;
+
+  return array_assignment_node;
 }
+
 ast_ *handle_record_assignment(parser_ *parser, scope_ *scope)
 {
   printf("Processing record assignment\n");
@@ -340,7 +439,7 @@ void parser_expect(parser_ *parser, enum token_type expected_type)
   {
     parser->prev_token = parser->current_token;
     parser->current_token = lexer_next(parser->lexer);
-    printf("\tconsumed TOKEN: %s\n", token_type_to_string(parser->prev_token->type));
+    // printf("\tconsumed TOKEN: %s\n", token_type_to_string(parser->prev_token->type));
   }
   else
   {

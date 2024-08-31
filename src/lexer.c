@@ -244,6 +244,11 @@ token_ *lexer_collect_alphanum(lexer_ *lexer)
     return init_token(TOKEN_BOOL, value);
   }
 
+  if (strcmp(value, "DIV") == 0 || strcmp(value, "MOD") == 0)
+  {
+    return init_token(TOKEN_BIN_OP, value);
+  }
+
   return init_token(TOKEN_ID, value);
 }
 

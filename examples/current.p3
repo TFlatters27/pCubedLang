@@ -3,6 +3,7 @@
 # Constants
 CONSTANT PI <- 3.14159
 CONSTANT CHAR <- 'z'
+CONSTANT KELVIN <- -280
 CONSTANT CLASS_NAME <- "Year 4"
 CONSTANT SPEED_OF_LIGHT <- 3e+8
 CONSTANT SCORES <- [85, 90, 88, 92, 95]
@@ -10,8 +11,8 @@ CONSTANT ALPHABET <- ['a', 'b', 'c', 'd', 'e', 'f']
 
 # Variables
 name <- 'Alice'
-age <- 16
-score <- 95.5
+age <- 16 + 1
+score <- 95.5 - 0.5
 isPassed <- True
 
 # Arrays
