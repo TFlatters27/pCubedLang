@@ -12,6 +12,28 @@ const char *ast_type_to_string(enum ast_type type)
     return "AST_COMPOUND";
   case AST_NOOP:
     return "AST_NOOP";
+  case AST_NUM:
+    return "AST_NUM";
+  case AST_STRING:
+    return "AST_STRING";
+  case AST_BOOL:
+    return "AST_BOOL";
+  case AST_CHAR:
+    return "AST_CHAR";
+  case AST_REAL:
+    return "AST_REAL";
+  case AST_VARIABLE:
+    return "AST_VARIABLE";
+  case AST_FUNCTION_CALL:
+    return "AST_FUNCTION_CALL";
+  case AST_ARRAY:
+    return "AST_ARRAY";
+  case AST_BINARY_OP:
+    return "AST_BINARY_OP";
+  case AST_UNARY_OP:
+    return "AST_UNARY_OP";
+  case AST_RECORD:
+    return "AST_RECORD";
   default:
     return "UNKNOWN_AST_TYPE";
   }

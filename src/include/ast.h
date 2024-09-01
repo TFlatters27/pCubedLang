@@ -4,8 +4,7 @@
 #include <stdlib.h>
 
 // Enum representing the different types of AST nodes.
-enum ast_type
-{
+enum ast_type {
     AST_NUM,            // For number literals
     AST_STRING,         // For string literals
     AST_BOOL,           // For boolean literals
@@ -19,51 +18,61 @@ enum ast_type
     AST_FUNCTION_CALL,  // For function calls
     AST_ARRAY,          // For array literals
     AST_BINARY_OP,      // For binary operations (e.g., +, -, *)
-    AST_UNARY_OP        // For unary operations (e.g., -)
+    AST_UNARY_OP,       // For unary operations (e.g., -)
+    AST_RECORD          // For record creation
 };
 
+// Structure representing an element (field) in a record.
+typedef struct AST_RECORD_ELEMENT_STRUCT {
+    char *element_name;         // Name of the element (e.g., "name", "age")
+    struct AST_STRUCT *type;    // Type of the element (e.g., AST_STRING, AST_ARRAY)
+} ast_record_element_;
+
 // Structure representing an Abstract Syntax Tree (AST) node.
-typedef struct AST_STRUCT
-{
-    enum ast_type type;            // Type of AST node
-    struct SCOPE_STRUCT *scope;    // Scope the AST node belongs to
+typedef struct AST_STRUCT {
+    enum ast_type type;             // Type of AST node
+    struct SCOPE_STRUCT *scope;     // Scope the AST node belongs to
 
     /* AST_LITERAL */
-    int int_value;                 // Integer value (if this node is an integer literal)
-    char *string_value;            // String value (if this node is a string literal)
-    int bool_value;                // Boolean value (if this node is a boolean literal)
-    char char_value;               // Character value (if this node is a character literal)
-    float real_value;              // Real value (if this node is a floating point literal)
+    int int_value;                  // Integer value (if this node is an integer literal)
+    char *string_value;             // String value (if this node is a string literal)
+    int bool_value;                 // Boolean value (if this node is a boolean literal)
+    char char_value;                // Character value (if this node is a character literal)
+    float real_value;               // Real value (if this node is a floating point literal)
 
     /* AST_VARIABLE */
-    char *variable_name;           // Name of the variable (if this node is a variable reference)
+    char *variable_name;            // Name of the variable (if this node is a variable reference)
 
     /* AST_ASSIGNMENT */
-    struct AST_STRUCT *value;      // Value to assign (expression being assigned)
-    int constant;                  // Whether the assignment is a constant
+    struct AST_STRUCT *value;       // Value to assign (expression being assigned)
+    int constant;                   // Whether the assignment is a constant
 
     /* AST_INSTANTIATION / AST_FUNCTION_CALL */
-    char *instantiated_type;       // Name of the type or function being instantiated/called
-    struct AST_STRUCT **arguments; // List of arguments (for function calls/instantiations)
-    size_t arguments_size;         // Number of arguments
+    char *instantiated_type;        // Name of the type or function being instantiated/called
+    struct AST_STRUCT **arguments;  // List of arguments (for function calls/instantiations)
+    size_t arguments_size;          // Number of arguments
 
     /* AST_COMPOUND */
     struct AST_STRUCT **compound_value; // List of statements (if this node is a compound statement)
-    size_t compound_size;           // Number of statements in the compound
+    size_t compound_size;            // Number of statements in the compound
 
     /* AST_ARRAY */
-    struct AST_STRUCT **elements;  // List of elements (if this node is an array literal)
-    size_t elements_size;          // Number of elements in the array
+    struct AST_STRUCT **elements;   // List of elements (if this node is an array literal)
+    size_t elements_size;           // Number of elements in the array
 
     /* AST_BINARY_OP */
-    struct AST_STRUCT *left;       // Left operand (if this node is a binary operation)
-    struct AST_STRUCT *right;      // Right operand (if this node is a binary operation)
-    char *binary_op;               // Operator as a string (e.g., "+", "-", "*", "DIV", "MOD")
+    struct AST_STRUCT *left;        // Left operand (if this node is a binary operation)
+    struct AST_STRUCT *right;       // Right operand (if this node is a binary operation)
+    char *binary_op;                // Operator as a string (e.g., "+", "-", "*", "DIV", "MOD")
 
     /* AST_UNARY_OP */
-    struct AST_STRUCT *operand;    // Operand (if this node is a unary operation)
-    char *unary_op;                // Operator as a string (e.g., "-")
+    struct AST_STRUCT *operand;     // Operand (if this node is a unary operation)
+    char *unary_op;                 // Operator as a string (e.g., "-")
 
+    /* AST_RECORD */
+    char *record_name;                 // Name of the record (e.g., "Student")
+    ast_record_element_ **record_elements; // List of element declarations (e.g., fields like "name", "age")
+    size_t record_elements_size;        // Number of element declarations
 } ast_;
 
 // Function to initialize an AST node of a given type.

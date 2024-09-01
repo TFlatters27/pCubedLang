@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   scope_ *scope = init_scope();
   ast_ *ast = parser_parse(parser, scope);
 
-  printf("AST Type: %d, Lines parsed: %zu\n", ast->type, ast->compound_size);
+  printf("AST Type: %d, Compound size: %zu\n", ast->type, ast->compound_size);
 
   return 0;
 }

@@ -72,12 +72,12 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
     {
       expression->real_value = atof(current_token->value);
     }
-    parser_expect(parser, current_token->type);
+    parser_expect(parser, TOKEN_INT | TOKEN_REAL);
   }
   else if (current_token->type == TOKEN_STRING)
   {
     expression = init_ast(AST_STRING);
-    expression->string_value = strdup(current_token->value);
+    expression->string_value = current_token->value;
     parser_expect(parser, TOKEN_STRING);
   }
   else if (current_token->type == TOKEN_CHAR)
@@ -94,7 +94,7 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
   }
   else if (current_token->type == TOKEN_ID)
   {
-    char *variable_id = strdup(current_token->value);
+    char *variable_id = current_token->value;
     parser_expect(parser, TOKEN_ID);
 
     if (parser->current_token->type == TOKEN_LPAREN)
@@ -107,7 +107,7 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
       while (parser->current_token->type != TOKEN_RPAREN)
       {
         ast_ *arg = parse_expression(parser, scope);
-        add_ast_to_list(expression->arguments, arg);
+        add_ast_to_list(&(expression->arguments), arg);
 
         if (parser->current_token->type == TOKEN_COMMA)
         {
@@ -171,7 +171,7 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
       {
         ast_ *bin_op = init_ast(AST_BINARY_OP);
         bin_op->left = expression;
-        bin_op->binary_op = strdup(op_value);
+        bin_op->binary_op = op_value;
         bin_op->right = right;
         expression = bin_op;
       }
@@ -190,7 +190,7 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
       {
         ast_ *bin_op = init_ast(AST_BINARY_OP);
         bin_op->left = expression;
-        bin_op->binary_op = strdup(op_value);
+        bin_op->binary_op = op_value;
         bin_op->right = right;
         expression = bin_op;
       }
@@ -207,7 +207,7 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
       {
         ast_ *bin_op = init_ast(AST_BINARY_OP);
         bin_op->left = expression;
-        bin_op->binary_op = strdup(op_value);
+        bin_op->binary_op = op_value;
         bin_op->right = right;
         expression = bin_op;
       }
@@ -261,7 +261,7 @@ ast_ *handle_variable_assignment(parser_ *parser, scope_ *scope)
     while (parser->current_token->type != TOKEN_RPAREN)
     {
       ast_ *arg = parse_expression(parser, scope);
-      add_ast_to_list(instantiation->arguments, arg);
+      add_ast_to_list(&(instantiation->arguments), arg);
 
       if (parser->current_token->type == TOKEN_COMMA)
       {
@@ -358,9 +358,6 @@ ast_ *handle_undefined(parser_ *parser, scope_ *scope)
   case TOKEN_FULLSTOP:
     // id.id... <- expression
     return handle_record_assignment(parser, scope);
-  case TOKEN_COLON:
-    // id : id{data type}
-    return handle_record_field(parser, scope);
   case TOKEN_LPAREN:
     // id(val...)
     return handle_subroutine_call(parser, scope);
@@ -390,9 +387,104 @@ ast_ *handle_if(parser_ *parser, scope_ *scope)
 
 ast_ *handle_record(parser_ *parser, scope_ *scope)
 {
-  printf("Processing a RECORD block\n");
-  exit(0);
-  return init_ast(AST_NOOP);
+  // Expect and store the record's name
+  parser_expect(parser, TOKEN_ID); // Consume 'RECORD'
+  char *record_name = parser->current_token->value;
+  parser_expect(parser, TOKEN_ID); // Consume the record name
+
+  // Initialize the AST node for the record
+  ast_ *record_ast = init_ast(AST_RECORD);
+  record_ast->record_name = record_name;
+
+  // Initialize space for record elements
+  record_ast->record_elements_size = 0;
+  record_ast->record_elements = NULL;
+
+  parser_expect(parser, TOKEN_NEWLINE);
+
+  // Loop to parse all record fields
+  while (strcmp(parser->current_token->value, "ENDRECORD") != 0)
+  {
+    // Handle the field name
+    char *field_name = parser->current_token->value;
+    parser_expect(parser, TOKEN_ID); // Consume the field name
+
+    // Expect and handle the colon
+    parser_expect(parser, TOKEN_COLON); // Consume ':'
+
+    // Parse the field type
+    ast_ *field_type_ast = NULL;
+
+    if (strcmp(parser->current_token->value, "String") == 0)
+    {
+      field_type_ast = init_ast(AST_STRING);
+    }
+    else if (strcmp(parser->current_token->value, "Integer") == 0)
+    {
+      field_type_ast = init_ast(AST_NUM);
+    }
+    else if (strcmp(parser->current_token->value, "Real") == 0)
+    {
+      field_type_ast = init_ast(AST_REAL);
+    }
+    else if (strcmp(parser->current_token->value, "Boolean") == 0)
+    {
+      field_type_ast = init_ast(AST_BOOL);
+    }
+    else if (strcmp(parser->current_token->value, "Char") == 0)
+    {
+      field_type_ast = init_ast(AST_CHAR);
+    }
+    else
+    {
+      printf("Unknown type: %s\n", parser->current_token->value);
+      exit(1);
+    }
+
+    parser_expect(parser, TOKEN_ID); // Consume the type
+
+    // Handle multi-dimensional arrays
+    while (parser->current_token->type == TOKEN_LBRACKET)
+    {
+      int dimensions = 1;
+
+      // Count the number of consecutive '[]' pairs
+      while (parser->current_token->type == TOKEN_LBRACKET)
+      {
+        parser_expect(parser, TOKEN_LBRACKET); // Consume '['
+        parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
+        dimensions++;
+      }
+
+      // Wrap the previous type in nested array types
+      for (int i = 0; i < dimensions; i++)
+      {
+        ast_ *array_type_ast = init_ast(AST_ARRAY);
+        array_type_ast->elements_size = 0; // Placeholder for array elements if needed
+        array_type_ast->elements = malloc(sizeof(ast_ *));
+        array_type_ast->elements[0] = field_type_ast;
+        array_type_ast->elements_size = 1;
+
+        field_type_ast = array_type_ast;
+      }
+    }
+
+    // Create the record element AST node
+    ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
+    record_element->element_name = field_name;
+    record_element->type = field_type_ast;
+
+    // Add the record element to the record's list
+    record_ast->record_elements_size++;
+    record_ast->record_elements = realloc(record_ast->record_elements, record_ast->record_elements_size * sizeof(ast_record_element_ *));
+    record_ast->record_elements[record_ast->record_elements_size - 1] = record_element;
+
+    parser_expect(parser, TOKEN_NEWLINE);
+  }
+
+  parser_expect(parser, TOKEN_ID); // Consume 'ENDRECORD'
+
+  return record_ast;
 }
 
 ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
@@ -444,8 +536,8 @@ void parser_expect(parser_ *parser, enum token_type expected_type)
   else
   {
     printf(
-        "Expected token `%s` at %d:%d\n",
-        token_type_to_string(expected_type),
+        "Expected token `%s`{%s} at %d:%d\n",
+        token_type_to_string(expected_type), parser->current_token->value,
         parser->lexer->line, parser->lexer->column);
     exit(1);
   }
@@ -478,6 +570,7 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
     if (parser->current_token->type == TOKEN_NEWLINE)
     {
       parser_expect(parser, TOKEN_NEWLINE);
+      continue; // Skip processing for newlines
     }
 
     ast_ *ast_statement = parser_parse_statement(parser, scope);
