@@ -16,11 +16,12 @@ enum token_type
   TOKEN_LBRACKET = 1 << 10,  // 1024 : [
   TOKEN_RBRACKET = 1 << 11,  // 2048 : ]
   TOKEN_BIN_OP = 1 << 12,    // 4096 : +|-|*|/|^|DIV|MOD
-  TOKEN_UN_OP = 1 << 13,     // 8192 : !|-
-  TOKEN_COMMA = 1 << 14,     // 16384 : ,
-  TOKEN_COLON = 1 << 15,     // 32768 : :
-  TOKEN_FULLSTOP = 1 << 16,  // 65536 : .
-  TOKEN_EOF = 1 << 17        // 131072 : ^D
+  TOKEN_REL_OP = 1 << 13,    // 8192: < | > | = | != | <= | >=
+  TOKEN_UN_OP = 1 << 14,     // 16384 : -
+  TOKEN_COMMA = 1 << 15,     // 32768 : ,
+  TOKEN_COLON = 1 << 16,     // 65536 : :
+  TOKEN_FULLSTOP = 1 << 17,  // 131072 : .
+  TOKEN_EOF = 1 << 18        // 262144 : ^D
 };
 
 typedef struct TOKEN_STRUCT

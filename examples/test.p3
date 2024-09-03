@@ -99,3 +99,23 @@ printStudentDetails(student1)
 # Calculate and output average score
 averageScore <- calculateAverage(scores)
 OUTPUT 'Average Score: ', averageScore
+
+
+
+
+SUBROUTINE printHello()
+  OUTPUT "Hello" + "World"
+ENDSUBROUTINE
+
+SUBROUTINE isEven(a)
+  IF (a MOD 2 = 0)
+    RETURN True
+  ENDIF
+  RETURN False
+ENDSUBROUTINE
+
+bond <- add(3,7)
+printHello()
+OUTPUT isEven(10)
+
+OUTPUT bond

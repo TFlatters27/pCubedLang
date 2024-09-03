@@ -136,21 +136,21 @@ token_ *lexer_next(lexer_ *lexer)
     {
       lexer_progress(lexer); // progress past '<'
       lexer_progress(lexer); // progress past '='
-      return init_token(TOKEN_BIN_OP, "<=");
+      return init_token(TOKEN_REL_OP, "<=");
     }
 
     if (lexer->c == '>' && lexer->contents[lexer->index + 1] == '=')
     {
       lexer_progress(lexer); // progress past '>'
       lexer_progress(lexer); // progress past '='
-      return init_token(TOKEN_BIN_OP, ">=");
+      return init_token(TOKEN_REL_OP, ">=");
     }
 
     if (lexer->c == '!' && lexer->contents[lexer->index + 1] == '=')
     {
       lexer_progress(lexer); // progress past '!'
       lexer_progress(lexer); // progress past '='
-      return init_token(TOKEN_BIN_OP, "!=");
+      return init_token(TOKEN_REL_OP, "!=");
     }
 
     switch (lexer->c)
@@ -166,11 +166,11 @@ token_ *lexer_next(lexer_ *lexer)
     case '^':
       return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
     case '<':
-      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_REL_OP, lexer_get_char_as_string(lexer)));
     case '>':
-      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_REL_OP, lexer_get_char_as_string(lexer)));
     case '=':
-      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_REL_OP, lexer_get_char_as_string(lexer)));
     case '(':
       return lexer_collect_token(lexer, init_token(TOKEN_LPAREN, lexer_get_char_as_string(lexer)));
     case ')':

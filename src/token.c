@@ -25,6 +25,7 @@ const char *token_type_to_string(enum token_type types)
       {TOKEN_LBRACKET, "LEFT BRACKET"},
       {TOKEN_RBRACKET, "RIGHT BRACKET"},
       {TOKEN_BIN_OP, "BINARY OPERATOR"},
+      {TOKEN_REL_OP, "RELATIONAL OPERATOR"},
       {TOKEN_COMMA, "COMMA"},
       {TOKEN_COLON, "COLON"},
       {TOKEN_FULLSTOP, "FULLSTOP"},
