@@ -52,6 +52,8 @@ const char *ast_type_to_string(enum ast_type type)
     return "AST_DEFINITE_LOOP";
   case AST_INDEFINITE_LOOP:
     return "AST_INDEFINITE_LOOP";
+  case AST_SELECTION:
+    return "AST_SELECTION";
   default:
     snprintf(buffer, sizeof(buffer), "UNKNOWN_AST_TYPE %d", type);
     return buffer;

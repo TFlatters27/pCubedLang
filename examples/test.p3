@@ -16,6 +16,7 @@ scores <- [85, 90, 88, 92, 95]
 
 table <- [[1,2],[2,4],[3,6],[4,8]]
 table[3][1] <- 16
+table[3][2]
 
 # Records
 RECORD Student
@@ -99,9 +100,6 @@ printStudentDetails(student1)
 # Calculate and output average score
 averageScore <- calculateAverage(scores)
 OUTPUT 'Average Score: ', averageScore
-
-
-
 
 SUBROUTINE printHello()
   OUTPUT "Hello" + "World"

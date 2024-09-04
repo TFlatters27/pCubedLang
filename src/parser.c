@@ -48,9 +48,10 @@ ast_ *parser_parse_statement(parser_ *parser, scope_ *scope)
   }
   else if (parser->current_token->type == TOKEN_NEWLINE)
   {
+    parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
     return init_ast(AST_NOOP);
   }
-  exit(1);
+  // exit(1);
   return init_ast(AST_NOOP);
 }
 
@@ -67,12 +68,6 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
 
   while (parser->current_token->type != TOKEN_EOF)
   {
-    if (parser->current_token->type == TOKEN_NEWLINE)
-    {
-      parser_expect(parser, TOKEN_NEWLINE);
-      continue; // Skip processing for newlines
-    }
-
     ast_ *ast_statement = parser_parse_statement(parser, scope);
 
     if (ast_statement)
@@ -95,7 +90,7 @@ ast_ *parser_parse_id(parser_ *parser, scope_ *scope)
       {"REPEAT", handle_undefined_loop},
       {"WHILE", handle_undefined_loop},
       {"FOR", handle_defined_loop},
-      {"IF", handle_if},
+      {"IF", handle_selection},
       {"RECORD", handle_record},
       {"SUBROUTINE", handle_subroutine},
       {"RETURN", handle_return},
@@ -163,10 +158,21 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
   // Handle potential unary operators at the start
   if (current_token->type == TOKEN_BIN_OP && strcmp(current_token->value, "-") == 0)
   {
-    // This is a unary minus, as there is no left-hand side operand yet
+    // This is a unary minus
     parser_expect(parser, TOKEN_BIN_OP);
     expression = init_ast(AST_UNARY_OP);
     expression->unary_op = strdup(current_token->value);   // Save the operator (in this case, "-")
+    expression->operand = parse_expression(parser, scope); // Parse the right-hand side expression
+    return expression;
+  }
+
+  // Handle "NOT" operator (Unary Boolean operation)
+  if (current_token->type == TOKEN_REL_OP && strcmp(current_token->value, "NOT") == 0)
+  {
+    // This is a unary boolean negation (NOT)
+    parser_expect(parser, TOKEN_REL_OP);
+    expression = init_ast(AST_UNARY_OP);
+    expression->unary_op = strdup(current_token->value);   // Save the operator (in this case, "NOT")
     expression->operand = parse_expression(parser, scope); // Parse the right-hand side expression
     return expression;
   }
@@ -266,77 +272,36 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
     exit(1);
   }
 
-  // Handle binary operations
-  while (parser->current_token->type == TOKEN_BIN_OP)
+  // Handle binary operations (including AND, OR)
+  while (parser->current_token->type == TOKEN_BIN_OP || parser->current_token->type == TOKEN_REL_OP)
   {
     token_ *op_token = parser->current_token;
     char *op_value = op_token->value;
 
-    parser_expect(parser, TOKEN_BIN_OP);
+    parser_expect(parser, (TOKEN_BIN_OP | TOKEN_REL_OP));
 
     ast_ *right = parse_expression(parser, scope);
 
     // Create the binary operation AST node
-    ast_ *bin_op = init_ast(AST_BINARY_OP);
-    bin_op->binary_op = op_value;
+    ast_ *bin_op = NULL;
 
-    int left_is_valid = (expression->type == AST_VARIABLE);
-    int right_is_valid = (right->type == AST_VARIABLE);
-
-    // Check for valid types based on operator
-    if (strcmp(op_value, "+") == 0)
+    if (strcmp(op_value, "AND") == 0 || strcmp(op_value, "OR") == 0)
     {
-      left_is_valid |= (expression->type == AST_CHAR || expression->type == AST_STRING ||
-                        expression->type == AST_INT || expression->type == AST_REAL);
-      right_is_valid |= (right->type == AST_CHAR || right->type == AST_STRING ||
-                         right->type == AST_INT || right->type == AST_REAL);
-
-      if (left_is_valid && right_is_valid)
-      {
-        // If one side is CHAR, the other side must be ID or CHAR
-        if ((expression->type == AST_CHAR || right->type == AST_CHAR) &&
-            !(expression->type == AST_CHAR || right->type == AST_VARIABLE) &&
-            !(right->type == AST_CHAR || expression->type == AST_VARIABLE))
-        {
-          printf("Invalid operation: '+' requires valid types on either side.\n");
-          exit(1);
-        }
-      }
-      else
-      {
-        printf("Type mismatch for '+'.\n");
-        exit(1);
-      }
+      bin_op = init_ast(AST_BINARY_OP);
+      bin_op->binary_op = op_value;
     }
-    else if (strcmp(op_value, "-") == 0 || strcmp(op_value, "*") == 0 ||
-             strcmp(op_value, "/") == 0 || strcmp(op_value, "^") == 0)
+    else
     {
-      left_is_valid |= (expression->type == AST_INT || expression->type == AST_REAL);
-      right_is_valid |= (right->type == AST_INT || right->type == AST_REAL);
-
-      if (!left_is_valid || !right_is_valid)
-      {
-        printf("Invalid operation: '%s' requires both operands to be ID, INT, or REAL.\n", op_value);
-        exit(1);
-      }
+      bin_op = init_ast(AST_RELATIONAL_OP);
+      bin_op->binary_op = op_value;
     }
-    else if (strcmp(op_value, "DIV") == 0 || strcmp(op_value, "MOD") == 0)
-    {
-      left_is_valid |= (expression->type == AST_INT);
-      right_is_valid |= (right->type == AST_INT);
 
-      if (!left_is_valid || !right_is_valid)
-      {
-        printf("Invalid operation: '%s' requires both operands to be ID or INT.\n", op_value);
-        exit(1);
-      }
-    }
     bin_op->left = expression;
     bin_op->right = right;
     expression = bin_op;
   }
 
-  // Handle relational operations
+  // Handle relational operations (as previously)
   while (parser->current_token->type == TOKEN_REL_OP)
   {
     token_ *op_token = parser->current_token;
@@ -349,35 +314,6 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
     // Create the binary operation AST node
     ast_ *bin_op = init_ast(AST_RELATIONAL_OP);
     bin_op->binary_op = op_value;
-
-    int left_is_valid = (expression->type == AST_VARIABLE);
-    int right_is_valid = (right->type == AST_VARIABLE);
-
-    // Check for valid types based on operator
-    if (strcmp(op_value, "+") == 0)
-    {
-      left_is_valid |= (expression->type == AST_CHAR || expression->type == AST_STRING ||
-                        expression->type == AST_INT || expression->type == AST_REAL);
-      right_is_valid |= (right->type == AST_CHAR || right->type == AST_STRING ||
-                         right->type == AST_INT || right->type == AST_REAL);
-
-      if (left_is_valid && right_is_valid)
-      {
-        // If one side is CHAR, the other side must be ID or CHAR
-        if ((expression->type == AST_CHAR || right->type == AST_CHAR) &&
-            !(expression->type == AST_CHAR || right->type == AST_VARIABLE) &&
-            !(right->type == AST_CHAR || expression->type == AST_VARIABLE))
-        {
-          printf("Invalid operation: relational operators (<, >, <=, >=, =, !=) requires valid types on either side.\n");
-          exit(1);
-        }
-      }
-      else
-      {
-        printf("Type mismatch for %s\n", op_value);
-        exit(1);
-      }
-    }
 
     bin_op->left = expression;
     bin_op->right = right;
@@ -459,8 +395,6 @@ ast_ *handle_assignment(parser_ *parser, scope_ *scope)
 
 ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
 {
-  printf("Processing an undefined loop block\n");
-
   // Initialize the AST node for the loop
   ast_ *loop_ast = init_ast(AST_INDEFINITE_LOOP);
 
@@ -479,11 +413,6 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
     {
       ast_ *statement = parser_parse_statement(parser, scope);
       add_ast_to_list(&loop_ast->loop_body, statement);
-
-      if (parser->current_token->type == TOKEN_NEWLINE)
-      {
-        parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
-      }
     }
 
     parser_expect(parser, TOKEN_ID); // Consume 'UNTIL'
@@ -508,11 +437,6 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
     {
       ast_ *statement = parser_parse_statement(parser, scope);
       add_ast_to_list(&loop_ast->loop_body, statement);
-
-      if (parser->current_token->type == TOKEN_NEWLINE)
-      {
-        parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
-      }
     }
 
     parser_expect(parser, TOKEN_ID); // Consume 'ENDWHILE'
@@ -528,8 +452,6 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
 
 ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
 {
-  printf("Processing a defined loop block\n");
-
   // Initialize the AST node for the loop
   ast_ *loop_ast = init_ast(AST_DEFINITE_LOOP);
 
@@ -602,11 +524,6 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   {
     ast_ *statement = parser_parse_statement(parser, scope);
     add_ast_to_list(&(loop_ast->loop_body), statement); // Add each statement to the loop body
-
-    if (parser->current_token->type == TOKEN_NEWLINE)
-    {
-      parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
-    }
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDFOR'
@@ -614,11 +531,88 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   return loop_ast;
 }
 
-ast_ *handle_if(parser_ *parser, scope_ *scope)
+ast_ *handle_selection(parser_ *parser, scope_ *scope)
 {
   printf("Processing an IF block\n");
-  exit(0);
-  return init_ast(AST_NOOP);
+
+  // Initialize the AST node for the selection statement
+  ast_ *selection_ast = init_ast(AST_SELECTION);
+
+  // Expect and consume the "IF" keyword
+  parser_expect(parser, TOKEN_ID); // Consume 'IF'
+
+  // Parse the condition expression
+  selection_ast->condition = parse_expression(parser, scope);
+
+  // Expect and consume the "THEN" keyword
+  parser_expect(parser, TOKEN_ID); // Consume 'THEN'
+
+  // Parse the body of the IF statement
+  selection_ast->if_body = init_ast_list();
+
+  parser_expect(parser, TOKEN_NEWLINE); // Consume the newline after THEN
+  while (parser->current_token->type != TOKEN_ID ||
+         (strcmp(parser->current_token->value, "ENDIF") != 0 &&
+          strcmp(parser->current_token->value, "ELSE") != 0))
+  {
+    ast_ *statement = parser_parse_statement(parser, scope);
+    add_ast_to_list(&selection_ast->if_body, statement);
+  }
+
+  // Handle ELSE IF blocks
+  ast_ **else_if_conditions = init_ast_list();
+  ast_ **else_if_bodies = init_ast_list();
+
+  while (strcmp(parser->current_token->value, "ELSE") == 0)
+  {
+    parser_expect(parser, TOKEN_ID); // Consume 'ELSE'
+
+    if (strcmp(parser->current_token->value, "IF") == 0)
+    {
+      // Handle ELSE IF
+      parser_expect(parser, TOKEN_ID); // Consume 'IF'
+
+      // Parse the condition for ELSE IF
+      ast_ *else_if_condition = parse_expression(parser, scope);
+      add_ast_to_list(&else_if_conditions, else_if_condition);
+
+      // Expect and consume the "THEN" keyword
+      parser_expect(parser, TOKEN_ID); // Consume 'THEN'
+
+      // Parse the body of the ELSE IF statement
+      ast_ **else_if_body = init_ast_list();
+      parser_expect(parser, TOKEN_NEWLINE); // Consume the newline after THEN
+      while (parser->current_token->type != TOKEN_ID ||
+             (strcmp(parser->current_token->value, "ENDIF") != 0 &&
+              strcmp(parser->current_token->value, "ELSE") != 0))
+      {
+        ast_ *statement = parser_parse_statement(parser, scope);
+        add_ast_to_list(&else_if_body, statement);
+      }
+      add_ast_to_list(&else_if_bodies, (ast_ *)else_if_body);
+    }
+    else
+    {
+      // Handle ELSE block
+      selection_ast->else_body = init_ast_list();
+      parser_expect(parser, TOKEN_NEWLINE); // Consume the newline after ELSE
+      while (parser->current_token->type != TOKEN_ID || strcmp(parser->current_token->value, "ENDIF") != 0)
+      {
+        ast_ *statement = parser_parse_statement(parser, scope);
+        add_ast_to_list(&selection_ast->else_body, statement);
+      }
+      break; // After ELSE, we expect ENDIF, so break out of the loop
+    }
+  }
+
+  // Expect and consume the "ENDIF" keyword
+  parser_expect(parser, TOKEN_ID); // Consume 'ENDIF'
+
+  // Set the parsed ELSE IF conditions and bodies into the AST
+  selection_ast->else_if_conditions = else_if_conditions;
+  selection_ast->else_if_bodies = &else_if_bodies;
+
+  return selection_ast;
 }
 
 ast_ *handle_record(parser_ *parser, scope_ *scope)
@@ -775,11 +769,6 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
     else
     {
       add_ast_to_list(&(subroutine_ast->body), statement);
-    }
-
-    if (parser->current_token->type == TOKEN_NEWLINE)
-    {
-      parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
     }
   }
 

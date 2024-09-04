@@ -1,4 +1,3 @@
-FizzBuzz(100)
 
 # This is comment
 SUBROUTINE FizzBuzz(i)
@@ -16,3 +15,5 @@ SUBROUTINE FizzBuzz(i)
     OUTPUT str
   ENDFOR
 ENDSUBROUTINE
+
+FizzBuzz(100)

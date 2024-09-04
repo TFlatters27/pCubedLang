@@ -43,7 +43,7 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope);
 ast_ *handle_assignment(parser_ *parser, scope_ *scope);
 ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope);
 ast_ *handle_defined_loop(parser_ *parser, scope_ *scope);
-ast_ *handle_if(parser_ *parser, scope_ *scope);
+ast_ *handle_selection(parser_ *parser, scope_ *scope);
 ast_ *handle_record(parser_ *parser, scope_ *scope);
 ast_ *handle_subroutine(parser_ *parser, scope_ *scope);
 ast_ *handle_return(parser_ *parser, scope_ *scope);
