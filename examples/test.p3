@@ -16,7 +16,7 @@ scores <- [85, 90, 88, 92, 95]
 
 table <- [[1,2],[2,4],[3,6],[4,8]]
 table[3][1] <- 16
-table[3][2]
+OUTPUT table[3][2]
 
 # Records
 RECORD Student
@@ -106,7 +106,7 @@ SUBROUTINE printHello()
 ENDSUBROUTINE
 
 SUBROUTINE isEven(a)
-  IF (a MOD 2 = 0)
+  IF a MOD 2 = 0 THEN
     RETURN True
   ENDIF
   RETURN False

@@ -40,7 +40,7 @@ void add_ast_to_list(ast_ ***list, ast_ *new_ast);
 
 ast_ *parse_expression(parser_ *parser, scope_ *scope);
 
-ast_ *handle_assignment(parser_ *parser, scope_ *scope);
+ast_ *handle_id(parser_ *parser, scope_ *scope);
 ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope);
 ast_ *handle_defined_loop(parser_ *parser, scope_ *scope);
 ast_ *handle_selection(parser_ *parser, scope_ *scope);

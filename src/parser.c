@@ -26,7 +26,8 @@ void parser_expect(parser_ *parser, enum token_type expected_type)
   {
     parser->prev_token = parser->current_token;
     parser->current_token = lexer_next(parser->lexer);
-    printf("\t\tconsumed TOKEN: %s{%s}\n", token_type_to_string(parser->prev_token->type), parser->prev_token->value);
+    if (parser->prev_token->type != TOKEN_NEWLINE)
+      printf("\tTOKEN: %s{%s}\n", token_type_to_string(parser->prev_token->type), parser->prev_token->value);
   }
   else
   {
@@ -43,7 +44,8 @@ ast_ *parser_parse_statement(parser_ *parser, scope_ *scope)
   if (parser->current_token->type == TOKEN_ID)
   {
     ast_ *ast = parser_parse_id(parser, scope);
-    printf("PARSED STATEMENT: %s\n", ast_type_to_string(ast->type));
+    printf("Parsed AST expression %s\n", ast_type_to_string(ast->type));
+
     return ast;
   }
   else if (parser->current_token->type == TOKEN_NEWLINE)
@@ -86,7 +88,7 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
 ast_ *parser_parse_id(parser_ *parser, scope_ *scope)
 {
   keyword_map_entry keyword_map[] = {
-      {"CONSTANT", handle_assignment},
+      {"CONSTANT", handle_id},
       {"REPEAT", handle_undefined_loop},
       {"WHILE", handle_undefined_loop},
       {"FOR", handle_defined_loop},
@@ -108,7 +110,7 @@ ast_ *parser_parse_id(parser_ *parser, scope_ *scope)
     }
   }
 
-  return handle_assignment(parser, scope);
+  return handle_id(parser, scope);
 }
 
 ast_ **init_ast_list()
@@ -150,247 +152,336 @@ void add_ast_to_list(ast_ ***list, ast_ *new_ast)
   (*list)[count + 1] = NULL;
 }
 
-ast_ *parse_expression(parser_ *parser, scope_ *scope)
+// Helper function to handle unary expressions like "-" and "NOT"
+ast_ *parse_unary_expression(parser_ *parser, scope_ *scope)
 {
+  printf("***** UNARY EXPRESSION *****\n");
   ast_ *expression = NULL;
-  token_ *current_token = parser->current_token;
 
-  // Handle potential unary operators at the start
-  if (current_token->type == TOKEN_BIN_OP && strcmp(current_token->value, "-") == 0)
+  // Handling unary minus
+  if (parser->current_token->type == TOKEN_ARITH_OP && strcmp(parser->current_token->value, "-") == 0)
   {
-    // This is a unary minus
-    parser_expect(parser, TOKEN_BIN_OP);
-    expression = init_ast(AST_UNARY_OP);
-    expression->unary_op = strdup(current_token->value);   // Save the operator (in this case, "-")
-    expression->operand = parse_expression(parser, scope); // Parse the right-hand side expression
+    parser_expect(parser, TOKEN_ARITH_OP); // Consume the unary minus
+    ast_ *right_expression = parse_expression(parser, scope);
+
+    // Check for integer, real, or ID types
+    if (right_expression->type != AST_INTEGER && right_expression->type != AST_REAL && right_expression->type != AST_VARIABLE)
+    {
+      fprintf(stderr, "Type error: Unary minus can only be applied to INT, REAL, or ID\n");
+      exit(1);
+    }
+
+    expression = init_ast(AST_ARITHMETIC_EXPRESSION);
+    expression->op = strdup("-");
+    expression->right = right_expression;
     return expression;
   }
 
-  // Handle "NOT" operator (Unary Boolean operation)
-  if (current_token->type == TOKEN_REL_OP && strcmp(current_token->value, "NOT") == 0)
+  // Handling NOT operator
+  if (parser->current_token->type == TOKEN_BOOL_OP && strcmp(parser->current_token->value, "NOT") == 0)
   {
-    // This is a unary boolean negation (NOT)
-    parser_expect(parser, TOKEN_REL_OP);
-    expression = init_ast(AST_UNARY_OP);
-    expression->unary_op = strdup(current_token->value);   // Save the operator (in this case, "NOT")
-    expression->operand = parse_expression(parser, scope); // Parse the right-hand side expression
+    parser_expect(parser, TOKEN_BOOL_OP); // Consume the NOT operator
+    ast_ *right_expression = parse_expression(parser, scope);
+
+    // Check for boolean expressions or IDs
+    if (right_expression->type != AST_BOOLEAN_EXPRESSION && right_expression->type != AST_VARIABLE)
+    {
+      fprintf(stderr, "Type error: NOT can only be applied to BOOLEAN expressions or ID\n");
+      exit(1);
+    }
+
+    expression = init_ast(AST_BOOLEAN_EXPRESSION);
+    expression->op = strdup("NOT");
+    expression->right = right_expression;
     return expression;
-  }
-
-  // Parse primary expressions first
-  if (current_token->type & (TOKEN_INT | TOKEN_REAL))
-  {
-    if (current_token->type == TOKEN_INT)
-    {
-      expression = init_ast(AST_INT);
-      expression->int_value = atoi(current_token->value);
-    }
-    else
-    {
-      expression = init_ast(AST_REAL);
-      expression->real_value = atof(current_token->value);
-    }
-    parser_expect(parser, TOKEN_INT | TOKEN_REAL);
-  }
-  else if (current_token->type == TOKEN_STRING)
-  {
-    expression = init_ast(AST_STRING);
-    expression->string_value = current_token->value;
-    parser_expect(parser, TOKEN_STRING);
-  }
-  else if (current_token->type == TOKEN_CHAR)
-  {
-    expression = init_ast(AST_CHAR);
-    expression->char_value = current_token->value[0];
-    parser_expect(parser, TOKEN_CHAR);
-  }
-  else if (current_token->type == TOKEN_BOOL)
-  {
-    expression = init_ast(AST_BOOL);
-    expression->bool_value = (strcmp(current_token->value, "True") == 0);
-    parser_expect(parser, TOKEN_BOOL);
-  }
-  else if (current_token->type == TOKEN_ID)
-  {
-    char *variable_id = current_token->value;
-    parser_expect(parser, TOKEN_ID);
-
-    if (parser->current_token->type == TOKEN_LPAREN)
-    {
-      expression = init_ast(AST_INSTANTIATION);
-      expression->instantiated_type = variable_id;
-      expression->arguments = init_ast_list();
-      parser_expect(parser, TOKEN_LPAREN);
-
-      while (parser->current_token->type != TOKEN_RPAREN)
-      {
-        ast_ *arg = parse_expression(parser, scope);
-        add_ast_to_list(&(expression->arguments), arg);
-
-        if (parser->current_token->type == TOKEN_COMMA)
-        {
-          parser_expect(parser, TOKEN_COMMA);
-        }
-      }
-
-      parser_expect(parser, TOKEN_RPAREN);
-    }
-    else
-    {
-      expression = init_ast(AST_VARIABLE);
-      expression->variable_name = variable_id;
-    }
-  }
-  else if (current_token->type == TOKEN_LBRACKET)
-  {
-    expression = init_ast(AST_ARRAY);
-    expression->elements = init_ast_list();
-    parser_expect(parser, TOKEN_LBRACKET);
-
-    while (parser->current_token->type != TOKEN_RBRACKET)
-    {
-      ast_ *element = parse_expression(parser, scope);
-      add_ast_to_list(&(expression->elements), element);
-
-      if (parser->current_token->type == TOKEN_COMMA)
-      {
-        parser_expect(parser, TOKEN_COMMA);
-      }
-    }
-
-    parser_expect(parser, TOKEN_RBRACKET);
-  }
-  else if (current_token->type == TOKEN_LPAREN)
-  {
-    parser_expect(parser, TOKEN_LPAREN);
-    expression = parse_expression(parser, scope);
-    parser_expect(parser, TOKEN_RPAREN);
-  }
-  else
-  {
-    printf("Unexpected token in expression: %s\n", current_token->value);
-    exit(1);
-  }
-
-  // Handle binary operations (including AND, OR)
-  while (parser->current_token->type == TOKEN_BIN_OP || parser->current_token->type == TOKEN_REL_OP)
-  {
-    token_ *op_token = parser->current_token;
-    char *op_value = op_token->value;
-
-    parser_expect(parser, (TOKEN_BIN_OP | TOKEN_REL_OP));
-
-    ast_ *right = parse_expression(parser, scope);
-
-    // Create the binary operation AST node
-    ast_ *bin_op = NULL;
-
-    if (strcmp(op_value, "AND") == 0 || strcmp(op_value, "OR") == 0)
-    {
-      bin_op = init_ast(AST_BINARY_OP);
-      bin_op->binary_op = op_value;
-    }
-    else
-    {
-      bin_op = init_ast(AST_RELATIONAL_OP);
-      bin_op->binary_op = op_value;
-    }
-
-    bin_op->left = expression;
-    bin_op->right = right;
-    expression = bin_op;
-  }
-
-  // Handle relational operations (as previously)
-  while (parser->current_token->type == TOKEN_REL_OP)
-  {
-    token_ *op_token = parser->current_token;
-    char *op_value = op_token->value;
-
-    parser_expect(parser, TOKEN_REL_OP);
-
-    ast_ *right = parse_expression(parser, scope);
-
-    // Create the binary operation AST node
-    ast_ *bin_op = init_ast(AST_RELATIONAL_OP);
-    bin_op->binary_op = op_value;
-
-    bin_op->left = expression;
-    bin_op->right = right;
-    expression = bin_op;
   }
 
   return expression;
 }
 
-ast_ *handle_assignment(parser_ *parser, scope_ *scope)
+// Helper function to handle variables, array access, and record access
+ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
+{
+  printf("***** VARIABLE/ACCESS EXPRESSION *****\n");
+
+  ast_ *expression = NULL;
+  char *variable_name = NULL;
+  int is_constant = 0;
+
+  if (strcmp(parser->current_token->value, "CONSTANT") == 0)
+  {
+    is_constant = 1;                 // Mark as constant
+    parser_expect(parser, TOKEN_ID); // Skip 'CONSTANT'
+  }
+
+  variable_name = parser->current_token->value;
+  parser_expect(parser, TOKEN_ID); // Consume the identifier
+
+  // Handle array access
+  if (parser->current_token->type == TOKEN_LBRACKET)
+  {
+    expression = init_ast(AST_ARRAY_ACCESS);
+    expression->variable_name = variable_name;
+    expression->index = init_ast_list();
+    while (parser->current_token->type == TOKEN_LBRACKET)
+    {
+      parser_expect(parser, TOKEN_LBRACKET);
+      ast_ *element = parse_expression(parser, scope); // Parse the index
+      add_ast_to_list(&(expression->index), element);
+      parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
+    }
+  }
+  // Handle record access
+  else if (parser->current_token->type == TOKEN_FULLSTOP)
+  {
+    expression = init_ast(AST_RECORD_ACCESS);
+    parser_expect(parser, TOKEN_FULLSTOP); // Consume '.'
+    expression->record_name = variable_name;
+    expression->field_name = parser->current_token->value;
+    parser_expect(parser, TOKEN_ID); // Consume field name
+  }
+  // Handle class instantiation
+  else if (parser->current_token->type == TOKEN_LPAREN)
+  {
+    expression = init_ast(AST_INSTANTIATION);
+    expression->class_name = variable_name;
+    expression->arguments = init_ast_list();
+    parser_expect(parser, TOKEN_LPAREN); // Consume '('
+    if (parser->current_token->type != TOKEN_RPAREN)
+    {
+      do
+      {
+        ast_ *arg = parse_expression(parser, scope);
+        add_ast_to_list(&(expression->arguments), arg);
+        if (parser->current_token->type == TOKEN_COMMA)
+        {
+          parser_expect(parser, TOKEN_COMMA); // Consume ','
+        }
+        else
+        {
+          break;
+        }
+      } while (parser->current_token->type != TOKEN_RPAREN);
+    }
+    parser_expect(parser, TOKEN_RPAREN); // Consume ')'
+  }
+  // Handle simple variable or constant
+  else
+  {
+    expression = init_ast(AST_VARIABLE);
+    expression->variable_name = variable_name;
+    expression->constant = is_constant;
+  }
+
+  return expression;
+}
+
+// Helper function to handle literals like integers, reals, characters, booleans, and strings
+ast_ *parse_literal(parser_ *parser, scope_ *scope)
+{
+  printf("***** LITERAL EXPRESSION *****\n");
+
+  ast_ *expression = NULL;
+
+  if (parser->current_token->type == TOKEN_INT)
+  {
+    expression = init_ast(AST_INTEGER);
+    expression->int_value = atoi(parser->current_token->value);
+    parser_expect(parser, TOKEN_INT);
+  }
+  else if (parser->current_token->type == TOKEN_REAL)
+  {
+    expression = init_ast(AST_REAL);
+    expression->real_value = atof(parser->current_token->value);
+    parser_expect(parser, TOKEN_REAL);
+  }
+  else if (parser->current_token->type == TOKEN_CHAR)
+  {
+    expression = init_ast(AST_CHARACTER);
+    expression->char_value = parser->current_token->value[0];
+    parser_expect(parser, TOKEN_CHAR);
+  }
+  else if (parser->current_token->type == TOKEN_BOOL)
+  {
+    expression = init_ast(AST_BOOLEAN);
+    expression->boolean_value = strcmp(parser->current_token->value, "True") == 0;
+    parser_expect(parser, TOKEN_BOOL);
+  }
+  else if (parser->current_token->type == TOKEN_STRING)
+  {
+    expression = init_ast(AST_STRING);
+    expression->string_value = strdup(parser->current_token->value);
+    parser_expect(parser, TOKEN_STRING);
+  }
+
+  return expression;
+}
+
+// Helper function to parse arrays
+ast_ *parse_array(parser_ *parser, scope_ *scope)
+{
+  ast_ *expression = init_ast(AST_ARRAY);
+  expression->array_elements = init_ast_list();
+
+  parser_expect(parser, TOKEN_LBRACKET); // Consume '['
+
+  while (parser->current_token->type != TOKEN_RBRACKET)
+  {
+    ast_ *element = parse_expression(parser, scope);         // Parse each element
+    add_ast_to_list(&(expression->array_elements), element); // Add element to the array
+
+    if (parser->current_token->type == TOKEN_COMMA)
+    {
+      parser_expect(parser, TOKEN_COMMA); // Consume ','
+    }
+  }
+
+  parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
+  return expression;
+}
+
+// Helper function to parse parentheses
+ast_ *parse_parenthesized_expression(parser_ *parser, scope_ *scope)
+{
+  parser_expect(parser, TOKEN_LPAREN);                // Consume '('
+  ast_ *expression = parse_expression(parser, scope); // Parse the inner expression
+  parser_expect(parser, TOKEN_RPAREN);                // Consume ')'
+  return expression;
+}
+
+// Helper function to handle binary arithmetic operations
+ast_ *parse_binary_operation(parser_ *parser, ast_ *left, scope_ *scope)
+{
+  printf("***** BINARY EXPRESSION *****\n");
+
+  ast_ *bin_op = init_ast(AST_ARITHMETIC_EXPRESSION);
+  bin_op->op = strdup(parser->current_token->value);
+  parser_expect(parser, TOKEN_ARITH_OP); // Consume the operator
+  ast_ *right_expression = parse_expression(parser, scope);
+  if (!left)
+  {
+    fprintf(stderr, "Type error: Invalid expression before binary operator '%s'\n", bin_op->op);
+    exit(1);
+  }
+  bin_op->left = left;
+  bin_op->right = right_expression;
+  return bin_op;
+}
+
+// Helper function to handle relational operations
+ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
+{
+  printf("***** RELATIONAL EXPRESSION *****\n");
+
+  ast_ *rel_op = init_ast(AST_BOOLEAN_EXPRESSION);
+  rel_op->op = strdup(parser->current_token->value);
+  parser_expect(parser, TOKEN_REL_OP); // Consume the operator
+  ast_ *right_expression = parse_expression(parser, scope);
+  if (!left)
+  {
+    fprintf(stderr, "Type error: Invalid expression before relational operator '%s'\n", rel_op->op);
+    exit(1);
+  }
+  rel_op->left = left;
+  rel_op->right = right_expression;
+  return rel_op;
+}
+
+ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
+{
+  printf("***** RELATIONAL EXPRESSION *****\n");
+
+  ast_ *bool_op = init_ast(AST_BOOLEAN_EXPRESSION);
+  bool_op->op = strdup(parser->current_token->value);
+  parser_expect(parser, TOKEN_BOOL_OP); // Consume the operator
+  ast_ *right_expression = parse_expression(parser, scope);
+  if (!left)
+  {
+    fprintf(stderr, "Type error: Invalid expression before relational operator '%s'\n", bool_op->op);
+    exit(1);
+  }
+  bool_op->left = left;
+  bool_op->right = right_expression;
+  return bool_op;
+}
+
+// The main expression parsing function
+ast_ *parse_expression(parser_ *parser, scope_ *scope)
+{
+  ast_ *expression = NULL;
+
+  // Check for unary expressions
+  expression = parse_unary_expression(parser, scope);
+  if (expression)
+    return expression;
+
+  // Handle variables, arrays, records, or instantiation
+  if (parser->current_token->type == TOKEN_ID)
+  {
+    expression = parse_variable_or_access(parser, scope);
+  }
+  // Handle literals
+  else
+  {
+    expression = parse_literal(parser, scope);
+  }
+
+  // Handle arrays
+  if (parser->current_token->type == TOKEN_LBRACKET)
+  {
+    expression = parse_array(parser, scope);
+  }
+
+  // Handle parentheses
+  if (parser->current_token->type == TOKEN_LPAREN)
+  {
+    expression = parse_parenthesized_expression(parser, scope);
+  }
+
+  // Handle binary arithmetic operations
+  if (parser->current_token->type == TOKEN_ARITH_OP)
+  {
+    expression = parse_binary_operation(parser, expression, scope);
+  }
+  // Handle relational operations
+  else if (parser->current_token->type == TOKEN_REL_OP)
+  {
+    expression = parse_relational_operation(parser, expression, scope);
+  }
+  // Handle boolean operations
+  else if (parser->current_token->type == TOKEN_BOOL_OP)
+  {
+    expression = parse_boolean_operation(parser, expression, scope);
+  }
+
+  return expression;
+}
+
+ast_ *handle_id(parser_ *parser, scope_ *scope)
 {
   ast_ *lhs = NULL;
-  char *variable_id = parser->current_token->value;
-  parser_expect(parser, TOKEN_ID);
 
-  int constant_flag = 0;
+  // Parse the left-hand side (LHS) of the assignment, if present
+  lhs = parse_expression(parser, scope);
 
-  // Check if the ID is "CONSTANT"
-  if (strcmp(variable_id, "CONSTANT") == 0)
+  // Check if we hit the assignment operator (e.g., "<-")
+  if (parser->current_token->type == TOKEN_ASSIGNMENT)
   {
-    constant_flag = 1;
+    parser_expect(parser, TOKEN_ASSIGNMENT); // Expect and consume the assignment token
 
-    // Expect the next token to be another ID
-    variable_id = parser->current_token->value;
-    parser_expect(parser, TOKEN_ID);
+    // Parse the right-hand side (RHS) of the assignment
+    ast_ *rhs = parse_expression(parser, scope);
+
+    // Create an assignment node
+    ast_ *assignment = init_ast(AST_ASSIGNMENT);
+    assignment->lhs = lhs;
+    assignment->rhs = rhs;
+
+    return assignment; // Return the full assignment AST node
   }
 
-  // Start building the LHS
-  lhs = init_ast(AST_VARIABLE);
-  lhs->variable_name = variable_id;
-
-  // Handle array indexing or record field access
-  while (parser->current_token->type == TOKEN_LBRACKET || parser->current_token->type == TOKEN_FULLSTOP)
-  {
-    if (parser->current_token->type == TOKEN_LBRACKET)
-    {
-      // Array access
-      parser_expect(parser, TOKEN_LBRACKET);
-      ast_ *index_expr = parse_expression(parser, scope);
-      parser_expect(parser, TOKEN_RBRACKET);
-
-      ast_ *array_access = init_ast(AST_ARRAY);
-      array_access->left = lhs;
-      array_access->elements = malloc(sizeof(ast_ *));
-      array_access->elements[0] = index_expr;
-      array_access->elements_size = 1;
-
-      lhs = array_access; // Update lhs to reflect array access
-    }
-    else if (parser->current_token->type == TOKEN_FULLSTOP)
-    {
-      // Record field access
-      parser_expect(parser, TOKEN_FULLSTOP);
-      char *field_name = parser->current_token->value;
-      parser_expect(parser, TOKEN_ID);
-
-      ast_ *record_access = init_ast(AST_RECORD_ACCESS);
-      record_access->left = lhs;
-      record_access->variable_name = field_name;
-
-      lhs = record_access; // Update lhs to reflect field access
-    }
-  }
-
-  // Expect the assignment operator
-  parser_expect(parser, TOKEN_ASSIGNMENT);
-
-  // Parse the right-hand side expression
-  ast_ *rhs = parse_expression(parser, scope);
-
-  // Create the assignment node
-  ast_ *assignment = init_ast(AST_ASSIGNMENT);
-  assignment->lhs = lhs;                // Set the left-hand side of the assignment
-  assignment->rhs = rhs;                // Set the right-hand side of the assignment
-  assignment->constant = constant_flag; // Set the constant flag
-
-  return assignment;
+  // If no assignment token is found, treat it as a standalone expression
+  return lhs;
 }
 
 ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
@@ -441,12 +532,6 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
 
     parser_expect(parser, TOKEN_ID); // Consume 'ENDWHILE'
   }
-  else
-  {
-    printf("Error: Expected 'REPEAT' or 'WHILE' to start an undefined loop.\n");
-    exit(1);
-  }
-
   return loop_ast;
 }
 
@@ -496,7 +581,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
     else
     {
       // Default step value if not specified
-      loop_ast->step_expr = init_ast(AST_INT);
+      loop_ast->step_expr = init_ast(AST_INTEGER);
       loop_ast->step_expr->int_value = 1; // Default to step 1
     }
   }
@@ -650,7 +735,7 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
     }
     else if (strcmp(parser->current_token->value, "Integer") == 0)
     {
-      field_type_ast = init_ast(AST_INT);
+      field_type_ast = init_ast(AST_INTEGER);
     }
     else if (strcmp(parser->current_token->value, "Real") == 0)
     {
@@ -658,11 +743,11 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
     }
     else if (strcmp(parser->current_token->value, "Boolean") == 0)
     {
-      field_type_ast = init_ast(AST_BOOL);
+      field_type_ast = init_ast(AST_BOOLEAN);
     }
     else if (strcmp(parser->current_token->value, "Char") == 0)
     {
-      field_type_ast = init_ast(AST_CHAR);
+      field_type_ast = init_ast(AST_CHARACTER);
     }
     else
     {
@@ -689,9 +774,8 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
       for (int i = 0; i < dimensions; i++)
       {
         ast_ *array_type_ast = init_ast(AST_ARRAY);
-        array_type_ast->elements_size = 0; // Placeholder for array elements if needed
-        array_type_ast->elements = (ast_ **)init_ast_list();
-        add_ast_to_list(&array_type_ast->elements, field_type_ast);
+        array_type_ast->array_elements = (ast_ **)init_ast_list();
+        add_ast_to_list(&array_type_ast->array_elements, field_type_ast);
 
         field_type_ast = array_type_ast;
       }
@@ -726,7 +810,6 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
 
   // Parse the parameter list
   parser_expect(parser, TOKEN_LPAREN); // Consume '('
-  subroutine_ast->parameters_size = 0;
   subroutine_ast->parameters = init_ast_list();
 
   while (parser->current_token->type != TOKEN_RPAREN)
@@ -754,7 +837,6 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
   parser_expect(parser, TOKEN_NEWLINE); // Consume newline
 
   // Parse the subroutine body
-  subroutine_ast->body_size = 0;
   subroutine_ast->body = init_ast_list();
 
   while (strcmp(parser->current_token->value, "ENDSUBROUTINE") != 0)

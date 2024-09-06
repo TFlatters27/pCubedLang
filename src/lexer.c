@@ -156,15 +156,15 @@ token_ *lexer_next(lexer_ *lexer)
     switch (lexer->c)
     {
     case '+':
-      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_ARITH_OP, lexer_get_char_as_string(lexer)));
     case '-':
-      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_ARITH_OP, lexer_get_char_as_string(lexer)));
     case '*':
-      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_ARITH_OP, lexer_get_char_as_string(lexer)));
     case '/':
-      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_ARITH_OP, lexer_get_char_as_string(lexer)));
     case '^':
-      return lexer_collect_token(lexer, init_token(TOKEN_BIN_OP, lexer_get_char_as_string(lexer)));
+      return lexer_collect_token(lexer, init_token(TOKEN_ARITH_OP, lexer_get_char_as_string(lexer)));
     case '<':
       return lexer_collect_token(lexer, init_token(TOKEN_REL_OP, lexer_get_char_as_string(lexer)));
     case '>':
@@ -246,7 +246,12 @@ token_ *lexer_collect_alphanum(lexer_ *lexer)
 
   if (strcmp(value, "DIV") == 0 || strcmp(value, "MOD") == 0)
   {
-    return init_token(TOKEN_BIN_OP, value);
+    return init_token(TOKEN_ARITH_OP, value);
+  }
+
+  if (strcmp(value, "AND") == 0 || strcmp(value, "OR") == 0 || strcmp(value, "NOT") == 0)
+  {
+    return init_token(TOKEN_BOOL_OP, value);
   }
 
   return init_token(TOKEN_ID, value);

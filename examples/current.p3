@@ -4,8 +4,9 @@
 CONSTANT PI <- 3.14159
 CONSTANT CHAR <- 'z' + 'x'
 CONSTANT KELVIN <- -280
+CONSTANT SUN <- -kelvin
 CONSTANT CLASS_NAME <- "Year 4"
-CONSTANT SPEED_OF_LIGHT <- 3e+8
+CONSTANT SPEED_OF_LIGHT <- (3 * 1000) - (3 / 1000) + 1
 CONSTANT SCORES <- [85, 90, 88, 92, 95]
 CONSTANT ALPHABET <- ['a', 'b', 'c', 'd', 'e', 'f']
 
@@ -14,6 +15,7 @@ name <- 'Alice'
 age <- 16 + 1
 score <- 95.5 - 0.5
 isPassed <- True
+value <- a + b - c
 
 # Arrays
 table <- [[1,2],[2,4],[3,6],[4,8]]
@@ -52,12 +54,14 @@ SUBROUTINE add(a,b)
   RETURN result
 ENDSUBROUTINE
 
-SUBROUTINE printHello()
-  OUTPUT "Hello World!"
+SUBROUTINE printHello(i)
+  FOR a <- 1 TO i
+    OUTPUT "Hello World!"
+  ENDFOR
 ENDSUBROUTINE
 
 bond <- add(3,7)
-printHello()
+printHello(i)
 
 OUTPUT "This is a test"
 OUTPUT "Hello", "World", "!"
@@ -154,4 +158,8 @@ ELSE IF (a MOD 4) = 2 THEN
 ELSE
   OUTPUT 'leaves a remainder of 3'
 ENDIF
+
+student1 <- Student('Bob', 17, 89.5, True, table, ALPHABET)
+student1.passed <- False
+val <- student1.passed
 
