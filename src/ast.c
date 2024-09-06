@@ -11,15 +11,6 @@ ast_ *init_ast(enum ast_type type)
   // Initialize common fields
   ast->scope = NULL;
 
-  if (type == AST_NOOP)
-  {
-    printf("\n");
-  }
-  else
-  {
-    printf("Initializing AST node %s\n", ast_type_to_string(ast->type));
-  }
-
   // Initialize based on the specific AST type
   switch (type)
   {

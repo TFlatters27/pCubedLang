@@ -19,16 +19,6 @@ int main(int argc, char *argv[])
   //   printf("{%s::%s}\n", token_type_to_string(token->type), token->value);
   // }
 
-  // token_ *token = lexer_next(lexer);
-  // printf("current token %s [%s]\n", token_type_to_string(token->type), token->value);
-  // printf("lexer: %c @ %d\n", lexer->c, lexer->index);
-  // token_ *peeked_token = lexer_peek(lexer);
-  // printf("current token %s [%s]\n", token_type_to_string(peeked_token->type), peeked_token->value);
-  // printf("lexer: %c @ %d\n", lexer->c, lexer->index);
-  // token_ *peeked_token_2 = lexer_peek(lexer);
-  // printf("current token %s [%s]\n", token_type_to_string(peeked_token_2->type), peeked_token_2->value);
-  // printf("lexer: %c @ %d\n", lexer->c, lexer->index);
-
   parser_ *parser = init_parser(lexer);
   scope_ *scope = init_scope();
   ast_ *ast = parser_parse(parser, scope);

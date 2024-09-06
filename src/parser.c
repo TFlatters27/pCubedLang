@@ -26,15 +26,15 @@ void parser_expect(parser_ *parser, enum token_type expected_type)
   {
     parser->prev_token = parser->current_token;
     parser->current_token = lexer_next(parser->lexer);
-    if (parser->prev_token->type != TOKEN_NEWLINE)
-      printf("\tTOKEN: %s{%s}\n", token_type_to_string(parser->prev_token->type), parser->prev_token->value);
+    // if (parser->prev_token->type != TOKEN_NEWLINE)
+    // printf("\tTOKEN: %s{%s}\n", token_type_to_string(parser->prev_token->type), parser->prev_token->value);
   }
   else
   {
-    printf(
-        "Expected token `%s`{%s} at %d:%d\n",
-        token_type_to_string(expected_type), parser->current_token->value,
-        parser->lexer->line, parser->lexer->column);
+    fprintf(
+        stderr, "Error: Found unexpected token `%s::%s` at line %d, column %d. Expected token: `%s`.\n",
+        token_type_to_string(parser->current_token->type), parser->current_token->value,
+        parser->lexer->line, parser->lexer->column, token_type_to_string(expected_type));
     exit(1);
   }
 }
@@ -44,7 +44,7 @@ ast_ *parser_parse_statement(parser_ *parser, scope_ *scope)
   if (parser->current_token->type == TOKEN_ID)
   {
     ast_ *ast = parser_parse_id(parser, scope);
-    printf("Parsed AST expression %s\n", ast_type_to_string(ast->type));
+    // printf("Parsed AST expression %s\n", ast_type_to_string(ast->type));
 
     return ast;
   }
@@ -155,7 +155,6 @@ void add_ast_to_list(ast_ ***list, ast_ *new_ast)
 // Helper function to handle unary expressions like "-" and "NOT"
 ast_ *parse_unary_expression(parser_ *parser, scope_ *scope)
 {
-  printf("***** UNARY EXPRESSION *****\n");
   ast_ *expression = NULL;
 
   // Handling unary minus
@@ -202,8 +201,6 @@ ast_ *parse_unary_expression(parser_ *parser, scope_ *scope)
 // Helper function to handle variables, array access, and record access
 ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
 {
-  printf("***** VARIABLE/ACCESS EXPRESSION *****\n");
-
   ast_ *expression = NULL;
   char *variable_name = NULL;
   int is_constant = 0;
@@ -279,8 +276,6 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
 // Helper function to handle literals like integers, reals, characters, booleans, and strings
 ast_ *parse_literal(parser_ *parser, scope_ *scope)
 {
-  printf("***** LITERAL EXPRESSION *****\n");
-
   ast_ *expression = NULL;
 
   if (parser->current_token->type == TOKEN_INT)
@@ -352,8 +347,6 @@ ast_ *parse_parenthesized_expression(parser_ *parser, scope_ *scope)
 // Helper function to handle binary arithmetic operations
 ast_ *parse_binary_operation(parser_ *parser, ast_ *left, scope_ *scope)
 {
-  printf("***** BINARY EXPRESSION *****\n");
-
   ast_ *bin_op = init_ast(AST_ARITHMETIC_EXPRESSION);
   bin_op->op = strdup(parser->current_token->value);
   parser_expect(parser, TOKEN_ARITH_OP); // Consume the operator
@@ -371,8 +364,6 @@ ast_ *parse_binary_operation(parser_ *parser, ast_ *left, scope_ *scope)
 // Helper function to handle relational operations
 ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
 {
-  printf("***** RELATIONAL EXPRESSION *****\n");
-
   ast_ *rel_op = init_ast(AST_BOOLEAN_EXPRESSION);
   rel_op->op = strdup(parser->current_token->value);
   parser_expect(parser, TOKEN_REL_OP); // Consume the operator
@@ -389,8 +380,6 @@ ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
 
 ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
 {
-  printf("***** RELATIONAL EXPRESSION *****\n");
-
   ast_ *bool_op = init_ast(AST_BOOLEAN_EXPRESSION);
   bool_op->op = strdup(parser->current_token->value);
   parser_expect(parser, TOKEN_BOOL_OP); // Consume the operator
@@ -568,7 +557,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
     }
     else
     {
-      printf("Error: Expected 'TO' after start expression.\n");
+      fprintf(stderr, "Error: Expected 'TO' after start expression.\n");
       exit(1);
     }
 
@@ -596,7 +585,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   }
   else
   {
-    printf("Error: Expected '<-' or 'IN' after loop variable.\n");
+    fprintf(stderr, "Error: Expected '<-' or 'IN' after loop variable.\n");
     exit(1);
   }
 
@@ -618,8 +607,6 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
 
 ast_ *handle_selection(parser_ *parser, scope_ *scope)
 {
-  printf("Processing an IF block\n");
-
   // Initialize the AST node for the selection statement
   ast_ *selection_ast = init_ast(AST_SELECTION);
 
@@ -751,7 +738,7 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
     }
     else
     {
-      printf("Unknown type: %s\n", parser->current_token->value);
+      fprintf(stderr, "Unknown type: %s\n", parser->current_token->value);
       exit(1);
     }
 
@@ -828,7 +815,7 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
     }
     else
     {
-      printf("Error: Unexpected token in parameter list: %s\n", parser->current_token->value);
+      fprintf(stderr, "Error: Unexpected token in parameter list: %s\n", parser->current_token->value);
       exit(1);
     }
   }
