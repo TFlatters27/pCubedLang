@@ -23,7 +23,15 @@ int main(int argc, char *argv[])
   scope_ *scope = init_scope();
   ast_ *ast = parser_parse(parser, scope);
 
+  int i = 0;
+  while (ast->compound_value[i] != NULL)
+  {
+    i++;
+  }
+
+  printf("********************************\n");
   printf("AST Type: %s\n", ast_type_to_string(ast->type));
+  printf("AST statements compiled: %d\n", i);
 
   return 0;
 }

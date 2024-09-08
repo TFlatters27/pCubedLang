@@ -67,8 +67,11 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
     ast_ *ast_statement = parser_parse_statement(parser, scope);
     if (ast_statement)
     {
-      print_ast(ast_statement, 0);
-      add_ast_to_list(&(compound->compound_value), ast_statement); // Add to the list dynamically
+      if (ast_statement->type != AST_NOOP)
+      {
+        print_ast(ast_statement, 0);
+        add_ast_to_list(&(compound->compound_value), ast_statement);
+      }
     }
     else
     {
