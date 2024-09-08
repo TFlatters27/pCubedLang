@@ -33,7 +33,7 @@ void parser_expect(parser_ *parser, enum token_type expected_type)
   {
     fprintf(
         stderr, "Error: Found unexpected token `%s::%s` at line %d, column %d. Expected token: `%s`.\n",
-        token_type_to_string(parser->current_token->type), parser->current_token->value,
+        token_type_to_string(parser->prev_token->type), parser->prev_token->value,
         parser->lexer->line, parser->lexer->column, token_type_to_string(expected_type));
     exit(1);
   }
@@ -45,13 +45,12 @@ ast_ *parser_parse_statement(parser_ *parser, scope_ *scope)
   {
     ast_ *ast = parser_parse_id(parser, scope);
     // printf("Parsed AST expression %s\n", ast_type_to_string(ast->type));
-
     return ast;
   }
   else if (parser->current_token->type == TOKEN_NEWLINE)
   {
     parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
-    return init_ast(AST_NOOP);
+    // return init_ast(AST_NOOP);
   }
   // exit(1);
   return init_ast(AST_NOOP);
@@ -61,26 +60,21 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
 {
   ast_ *compound = init_ast(AST_COMPOUND);
   compound->scope = scope;
-  compound->compound_value = calloc(1, sizeof(struct AST_STRUCT *));
+  compound->compound_value = init_ast_list(); // Use init_ast_list to initialize the list
 
-  ast_ *ast_statement = parser_parse_statement(parser, scope);
-  ast_statement->scope = scope;
-  compound->compound_value[0] = ast_statement;
-  compound->compound_size += 1;
-
-  while (parser->current_token->type != TOKEN_EOF)
+  do
   {
     ast_ *ast_statement = parser_parse_statement(parser, scope);
-
     if (ast_statement)
     {
-      compound->compound_size += 1;
-      compound->compound_value = realloc(
-          compound->compound_value,
-          compound->compound_size * sizeof(struct AST_STRUCT *));
-      compound->compound_value[compound->compound_size - 1] = ast_statement;
+      print_ast(ast_statement, 0);
+      add_ast_to_list(&(compound->compound_value), ast_statement); // Add to the list dynamically
     }
-  }
+    else
+    {
+      break;
+    }
+  } while (parser->current_token->type != TOKEN_EOF);
 
   return compound;
 }
@@ -204,6 +198,7 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
   ast_ *expression = NULL;
   char *variable_name = NULL;
   int is_constant = 0;
+  int is_userinput = 0;
 
   if (strcmp(parser->current_token->value, "CONSTANT") == 0)
   {
@@ -268,6 +263,7 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
     expression = init_ast(AST_VARIABLE);
     expression->variable_name = variable_name;
     expression->constant = is_constant;
+    expression->userinput = is_userinput;
   }
 
   return expression;
@@ -334,31 +330,24 @@ ast_ *parse_array(parser_ *parser, scope_ *scope)
   parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
   return expression;
 }
-
-// Helper function to parse parentheses
-ast_ *parse_parenthesized_expression(parser_ *parser, scope_ *scope)
+// Helper function to handle arithmetic operations
+ast_ *parse_arithmetic_operation(parser_ *parser, ast_ *left, scope_ *scope)
 {
-  parser_expect(parser, TOKEN_LPAREN);                // Consume '('
-  ast_ *expression = parse_expression(parser, scope); // Parse the inner expression
-  parser_expect(parser, TOKEN_RPAREN);                // Consume ')'
-  return expression;
-}
-
-// Helper function to handle binary arithmetic operations
-ast_ *parse_binary_operation(parser_ *parser, ast_ *left, scope_ *scope)
-{
-  ast_ *bin_op = init_ast(AST_ARITHMETIC_EXPRESSION);
-  bin_op->op = strdup(parser->current_token->value);
+  ast_ *arith_op = init_ast(AST_ARITHMETIC_EXPRESSION);
+  arith_op->op = strdup(parser->current_token->value);
   parser_expect(parser, TOKEN_ARITH_OP); // Consume the operator
-  ast_ *right_expression = parse_expression(parser, scope);
-  if (!left)
+
+  ast_ *right_expression = parse_expression(parser, scope); // Get the right-hand expression
+
+  if (!left || !right_expression)
   {
-    fprintf(stderr, "Type error: Invalid expression before binary operator '%s'\n", bin_op->op);
+    fprintf(stderr, "Type error: Invalid expression for arithmetic operator '%s'\n", arith_op->op);
     exit(1);
   }
-  bin_op->left = left;
-  bin_op->right = right_expression;
-  return bin_op;
+
+  arith_op->left = left;
+  arith_op->right = right_expression;
+  return arith_op;
 }
 
 // Helper function to handle relational operations
@@ -367,78 +356,80 @@ ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
   ast_ *rel_op = init_ast(AST_BOOLEAN_EXPRESSION);
   rel_op->op = strdup(parser->current_token->value);
   parser_expect(parser, TOKEN_REL_OP); // Consume the operator
-  ast_ *right_expression = parse_expression(parser, scope);
-  if (!left)
+
+  ast_ *right_expression = parse_expression(parser, scope); // Get the right-hand expression
+
+  if (!left || !right_expression)
   {
-    fprintf(stderr, "Type error: Invalid expression before relational operator '%s'\n", rel_op->op);
+    fprintf(stderr, "Type error: Invalid expression for relational operator '%s'\n", rel_op->op);
     exit(1);
   }
+
   rel_op->left = left;
   rel_op->right = right_expression;
   return rel_op;
 }
 
+// Helper function to handle boolean operations
 ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
 {
   ast_ *bool_op = init_ast(AST_BOOLEAN_EXPRESSION);
   bool_op->op = strdup(parser->current_token->value);
   parser_expect(parser, TOKEN_BOOL_OP); // Consume the operator
-  ast_ *right_expression = parse_expression(parser, scope);
-  if (!left)
+
+  ast_ *right_expression = parse_expression(parser, scope); // Get the right-hand expression
+
+  if (!left || !right_expression)
   {
-    fprintf(stderr, "Type error: Invalid expression before relational operator '%s'\n", bool_op->op);
+    fprintf(stderr, "Type error: Invalid expression for boolean operator '%s'\n", bool_op->op);
     exit(1);
   }
+
   bool_op->left = left;
   bool_op->right = right_expression;
   return bool_op;
 }
 
-// The main expression parsing function
+// Main expression parsing function
 ast_ *parse_expression(parser_ *parser, scope_ *scope)
 {
   ast_ *expression = NULL;
 
-  // Check for unary expressions
-  expression = parse_unary_expression(parser, scope);
-  if (expression)
-    return expression;
-
-  // Handle variables, arrays, records, or instantiation
-  if (parser->current_token->type == TOKEN_ID)
-  {
-    expression = parse_variable_or_access(parser, scope);
-  }
-  // Handle literals
-  else
-  {
-    expression = parse_literal(parser, scope);
-  }
-
-  // Handle arrays
-  if (parser->current_token->type == TOKEN_LBRACKET)
-  {
-    expression = parse_array(parser, scope);
-  }
-
-  // Handle parentheses
+  // Handle parentheses first (highest precedence)
   if (parser->current_token->type == TOKEN_LPAREN)
   {
-    expression = parse_parenthesized_expression(parser, scope);
+    parser_expect(parser, TOKEN_LPAREN);          // Consume '('
+    expression = parse_expression(parser, scope); // Parse the inner expression
+    parser_expect(parser, TOKEN_RPAREN);          // Consume ')'
+  }
+  else
+  {
+    // Handle variables, arrays, or instantiation
+    if (parser->current_token->type == TOKEN_ID)
+    {
+      expression = parse_variable_or_access(parser, scope);
+    }
+    // Handle literals
+    else
+    {
+      expression = parse_literal(parser, scope);
+    }
   }
 
-  // Handle binary arithmetic operations
-  if (parser->current_token->type == TOKEN_ARITH_OP)
+  // Handle arithmetic operations first (highest precedence)
+  while (parser->current_token->type == TOKEN_ARITH_OP)
   {
-    expression = parse_binary_operation(parser, expression, scope);
+    expression = parse_arithmetic_operation(parser, expression, scope);
   }
-  // Handle relational operations
-  else if (parser->current_token->type == TOKEN_REL_OP)
+
+  // Handle relational operations next
+  if (parser->current_token->type == TOKEN_REL_OP)
   {
     expression = parse_relational_operation(parser, expression, scope);
   }
-  // Handle boolean operations
-  else if (parser->current_token->type == TOKEN_BOOL_OP)
+
+  // Handle boolean operations (lowest precedence)
+  if (parser->current_token->type == TOKEN_BOOL_OP)
   {
     expression = parse_boolean_operation(parser, expression, scope);
   }
@@ -448,18 +439,29 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
 
 ast_ *handle_id(parser_ *parser, scope_ *scope)
 {
-  ast_ *lhs = NULL;
-
   // Parse the left-hand side (LHS) of the assignment, if present
-  lhs = parse_expression(parser, scope);
+  ast_ *lhs = parse_expression(parser, scope);
 
   // Check if we hit the assignment operator (e.g., "<-")
   if (parser->current_token->type == TOKEN_ASSIGNMENT)
   {
     parser_expect(parser, TOKEN_ASSIGNMENT); // Expect and consume the assignment token
 
-    // Parse the right-hand side (RHS) of the assignment
-    ast_ *rhs = parse_expression(parser, scope);
+    ast_ *rhs = NULL;
+
+    if (parser->current_token->type == TOKEN_ID && strcmp(parser->current_token->value, "USERINPUT") == 0)
+    {
+      parser_expect(parser, TOKEN_ID); // Consume 'USERINPUT'
+
+      lhs->userinput = 1;
+      rhs = init_ast(AST_STRING);
+      rhs->string_value = "";
+    }
+    else
+    {
+      // Parse the right-hand side (RHS) of the assignment
+      rhs = parse_expression(parser, scope);
+    }
 
     // Create an assignment node
     ast_ *assignment = init_ast(AST_ASSIGNMENT);
@@ -493,6 +495,7 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
     {
       ast_ *statement = parser_parse_statement(parser, scope);
       add_ast_to_list(&loop_ast->loop_body, statement);
+      parser_expect(parser, TOKEN_NEWLINE);
     }
 
     parser_expect(parser, TOKEN_ID); // Consume 'UNTIL'
@@ -517,6 +520,7 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
     {
       ast_ *statement = parser_parse_statement(parser, scope);
       add_ast_to_list(&loop_ast->loop_body, statement);
+      parser_expect(parser, TOKEN_NEWLINE); // Consume the newline after each statement in the loop body
     }
 
     parser_expect(parser, TOKEN_ID); // Consume 'ENDWHILE'
@@ -598,6 +602,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   {
     ast_ *statement = parser_parse_statement(parser, scope);
     add_ast_to_list(&(loop_ast->loop_body), statement); // Add each statement to the loop body
+    parser_expect(parser, TOKEN_NEWLINE);               // Consume the newline after each statement
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDFOR'
@@ -614,7 +619,7 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
   parser_expect(parser, TOKEN_ID); // Consume 'IF'
 
   // Parse the condition expression
-  selection_ast->condition = parse_expression(parser, scope);
+  selection_ast->if_condition = parse_expression(parser, scope);
 
   // Expect and consume the "THEN" keyword
   parser_expect(parser, TOKEN_ID); // Consume 'THEN'
@@ -629,11 +634,14 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
   {
     ast_ *statement = parser_parse_statement(parser, scope);
     add_ast_to_list(&selection_ast->if_body, statement);
+    parser_expect(parser, TOKEN_NEWLINE); // Consume the newline after each statement
   }
 
   // Handle ELSE IF blocks
   ast_ **else_if_conditions = init_ast_list();
-  ast_ **else_if_bodies = init_ast_list();
+  ast_ ***else_if_bodies = NULL; // We'll dynamically allocate memory for the list of lists
+
+  size_t else_if_body_count = 0;
 
   while (strcmp(parser->current_token->value, "ELSE") == 0)
   {
@@ -660,8 +668,20 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
       {
         ast_ *statement = parser_parse_statement(parser, scope);
         add_ast_to_list(&else_if_body, statement);
+        parser_expect(parser, TOKEN_NEWLINE); // Consume the newline after each statement
       }
-      add_ast_to_list(&else_if_bodies, (ast_ *)else_if_body);
+
+      // Expand the else_if_bodies list and add the new body
+      else_if_body_count++;
+      else_if_bodies = realloc(else_if_bodies, sizeof(ast_ **) * (else_if_body_count + 1));
+      if (else_if_bodies == NULL)
+      {
+        fprintf(stderr, "Error: Memory reallocation failed for else_if_bodies.\n");
+        return NULL;
+      }
+
+      else_if_bodies[else_if_body_count - 1] = else_if_body;
+      else_if_bodies[else_if_body_count] = NULL; // Null-terminate the list
     }
     else
     {
@@ -673,7 +693,6 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
         ast_ *statement = parser_parse_statement(parser, scope);
         add_ast_to_list(&selection_ast->else_body, statement);
       }
-      break; // After ELSE, we expect ENDIF, so break out of the loop
     }
   }
 
@@ -682,7 +701,7 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
 
   // Set the parsed ELSE IF conditions and bodies into the AST
   selection_ast->else_if_conditions = else_if_conditions;
-  selection_ast->else_if_bodies = &else_if_bodies;
+  selection_ast->else_if_bodies = else_if_bodies;
 
   return selection_ast;
 }
@@ -715,7 +734,9 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
 
     // Parse the field type
     ast_ *field_type_ast = NULL;
+    int dimension = 0; // Initialize dimension counter
 
+    // Determine the type of the field
     if (strcmp(parser->current_token->value, "String") == 0)
     {
       field_type_ast = init_ast(AST_STRING);
@@ -744,38 +765,22 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
 
     parser_expect(parser, TOKEN_ID); // Consume the type
 
-    // Handle multi-dimensional arrays
+    // Handle multi-dimensional arrays by counting the dimensions
     while (parser->current_token->type == TOKEN_LBRACKET)
     {
-      int dimensions = 1;
-
-      // Count the number of consecutive '[]' pairs
-      while (parser->current_token->type == TOKEN_LBRACKET)
-      {
-        parser_expect(parser, TOKEN_LBRACKET); // Consume '['
-        parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
-        dimensions++;
-      }
-
-      // Wrap the previous type in nested array types
-      for (int i = 0; i < dimensions; i++)
-      {
-        ast_ *array_type_ast = init_ast(AST_ARRAY);
-        array_type_ast->array_elements = (ast_ **)init_ast_list();
-        add_ast_to_list(&array_type_ast->array_elements, field_type_ast);
-
-        field_type_ast = array_type_ast;
-      }
+      dimension++;                           // Increment dimension for each '[' found
+      parser_expect(parser, TOKEN_LBRACKET); // Consume '['
+      parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
     }
 
     // Create the record element AST node
     ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
     record_element->element_name = field_name;
     record_element->type = field_type_ast;
+    record_element->dimension = dimension; // Assign the dimension here
 
     // Add the record element to the record's list
     add_ast_to_list((ast_ ***)&record_ast->record_elements, (ast_ *)record_element);
-
     parser_expect(parser, TOKEN_NEWLINE);
   }
 
@@ -835,10 +840,9 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
     {
       subroutine_ast->return_value = statement->return_value;
     }
-    else
-    {
-      add_ast_to_list(&(subroutine_ast->body), statement);
-    }
+
+    add_ast_to_list(&(subroutine_ast->body), statement);
+    parser_expect(parser, TOKEN_NEWLINE); // Consume newline
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDSUBROUTINE'
@@ -869,25 +873,21 @@ ast_ *handle_output(parser_ *parser, scope_ *scope)
   parser_expect(parser, TOKEN_ID); // Consume the 'OUTPUT' token
 
   // Initialize the list of output expressions
-  output_ast->output_expressions = NULL;
-  output_ast->output_expressions_size = 0;
+  output_ast->output_expressions = init_ast_list();
 
-  // Loop to parse all expressions following the OUTPUT keyword
   do
   {
-    // Parse each expression and add it to the output expressions list
-    ast_ *expression = parse_expression(parser, scope);
-    output_ast->output_expressions_size++;
-    output_ast->output_expressions = realloc(output_ast->output_expressions,
-                                             output_ast->output_expressions_size * sizeof(ast_ *));
-    output_ast->output_expressions[output_ast->output_expressions_size - 1] = expression;
-
-    // If the current token is a comma, consume it and continue parsing the next expression
+    ast_ *arg = parse_expression(parser, scope);
+    add_ast_to_list(&(output_ast->output_expressions), arg);
     if (parser->current_token->type == TOKEN_COMMA)
     {
-      parser_expect(parser, TOKEN_COMMA); // Consume the comma
+      parser_expect(parser, TOKEN_COMMA); // Consume ','
     }
-  } while (parser->current_token->type != TOKEN_NEWLINE && parser->current_token->type != TOKEN_EOF);
+    else
+    {
+      break;
+    }
+  } while (parser->current_token->type != TOKEN_NEWLINE);
 
   return output_ast;
 }

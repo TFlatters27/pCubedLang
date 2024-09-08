@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
   scope_ *scope = init_scope();
   ast_ *ast = parser_parse(parser, scope);
 
-  printf("AST Type: %s, Compound size: %zu\n", ast_type_to_string(ast->type), ast->compound_size);
+  printf("AST Type: %s\n", ast_type_to_string(ast->type));
 
   return 0;
 }

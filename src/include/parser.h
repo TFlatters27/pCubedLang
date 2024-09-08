@@ -48,5 +48,6 @@ ast_ *handle_record(parser_ *parser, scope_ *scope);
 ast_ *handle_subroutine(parser_ *parser, scope_ *scope);
 ast_ *handle_return(parser_ *parser, scope_ *scope);
 ast_ *handle_output(parser_ *parser, scope_ *scope);
+ast_ *handle_userinput(parser_ *parser, scope_ *scope);
 
 #endif

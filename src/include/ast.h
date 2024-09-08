@@ -38,6 +38,7 @@ typedef struct AST_RECORD_ELEMENT_STRUCT
 {
     char *element_name;      // Name of the element (e.g., "name", "age")
     struct AST_STRUCT *type; // Type of the element (e.g., AST_STRING, AST_ARRAY)
+    int dimension;           // Dimension of the element (e.g., [] or [[]])
 } ast_record_element_;
 
 // Structure representing an Abstract Syntax Tree (AST) node.
@@ -48,7 +49,6 @@ typedef struct AST_STRUCT
 
     /* AST_COMPOUND */
     struct AST_STRUCT **compound_value; // List of statements (if this node is a compound statement)
-    size_t compound_size;               // Number of statements in the compound
 
     /* AST_LITERAL */
     int int_value;                      // Integer value (if this node is an integer literal)
@@ -62,6 +62,7 @@ typedef struct AST_STRUCT
     struct AST_STRUCT *lhs; // Left-hand side value to assign (variable or record access)
     struct AST_STRUCT *rhs; // Right-hand side value to assign (expression being assigned)
     int constant;           // Whether the assignment is a constant
+    int userinput;          // Whether the assignment is a user input
 
     /* AST_VARIABLE */
     char *variable_name; // Name of the variable (if this node is a variable reference)
@@ -73,13 +74,13 @@ typedef struct AST_STRUCT
     struct AST_STRUCT **index; // List of indices (for multidimensional array access)
 
     /* AST_INSTANTIATION */
-    char *class_name; // Name of the class
+    char *class_name;              // Name of the class
     struct AST_STRUCT **arguments; // List of arguments (for function calls/instantiations)
 
     /* AST_EXPRESSION */
     struct AST_STRUCT *left;  // Left operand (if this node is a binary operation)
     struct AST_STRUCT *right; // Right operand (if this node is a binary operation)
-    char *op;           // Operator as a string (e.g., "+", "-", "*", "DIV", "MOD")
+    char *op;                 // Operator as a string (e.g., "+", "-", "*", "DIV", "MOD")
 
     /* AST_RECORD */
     char *record_name;                     // Name of the record (e.g., "Student")
@@ -94,7 +95,6 @@ typedef struct AST_STRUCT
     struct AST_STRUCT *return_value; // Return value (if any) of the subroutine
 
     /* AST_OUTPUT */
-    int output_expressions_size;
     struct AST_STRUCT **output_expressions; // List of expressions to be output
 
     /* AST_DEFINITE_LOOP */
@@ -121,5 +121,7 @@ ast_ *init_ast(enum ast_type type);
 
 // Function to convert an AST type to a string representation.
 const char *ast_type_to_string(enum ast_type type);
+
+void print_ast(ast_ *ast, int indent);
 
 #endif // AST_H

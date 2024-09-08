@@ -163,3 +163,9 @@ student1 <- Student('Bob', 17, 89.5, True, table, ALPHABET)
 student1.passed <- False
 val <- student1.passed
 
+a <- USERINPUT
+
+OUTPUT ((a MOD 5) != 0 AND (a MOD 3) != 0)
+
+OUTPUT a MOD 5 != (0 AND (a MOD 3) != 0)
+
