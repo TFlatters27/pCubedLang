@@ -1,1 +1,0 @@
-OUTPUT ((a MOD 5) != 0) AND ((a MOD 3) != 0)

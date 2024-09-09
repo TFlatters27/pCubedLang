@@ -70,6 +70,7 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
       if (ast_statement->type != AST_NOOP)
       {
         print_ast(ast_statement, 0);
+        ast_statement->scope = scope;
         add_ast_to_list(&(compound->compound_value), ast_statement);
       }
     }
@@ -110,45 +111,6 @@ ast_ *parser_parse_id(parser_ *parser, scope_ *scope)
   return handle_id(parser, scope);
 }
 
-ast_ **init_ast_list()
-{
-  ast_ **list = malloc(sizeof(ast_ *));
-  if (list == NULL)
-  {
-    fprintf(stderr, "Error: Memory allocation failed during AST list initialization.\n");
-    return NULL;
-  }
-  list[0] = NULL;
-  return list;
-}
-
-void add_ast_to_list(ast_ ***list, ast_ *new_ast)
-{
-  size_t count = 0;
-
-  if (*list == NULL)
-  {
-    fprintf(stderr, "Error: Cannot add AST to list. The list is NULL. Ensure the list is initialized before adding elements.\n");
-    return;
-  }
-
-  while ((*list)[count] != NULL)
-  {
-    count++;
-  }
-
-  ast_ **temp = realloc(*list, sizeof(ast_ *) * (count + 2));
-  if (temp == NULL)
-  {
-    fprintf(stderr, "Error: Memory reallocation failed while expanding AST list. Current list size: %zu elements.\n", count);
-    return;
-  }
-
-  *list = temp;
-  (*list)[count] = new_ast;
-  (*list)[count + 1] = NULL;
-}
-
 // Helper function to handle unary expressions like "-" and "NOT"
 ast_ *parse_unary_expression(parser_ *parser, scope_ *scope)
 {
@@ -170,6 +132,7 @@ ast_ *parse_unary_expression(parser_ *parser, scope_ *scope)
     expression = init_ast(AST_ARITHMETIC_EXPRESSION);
     expression->op = strdup("-");
     expression->right = right_expression;
+    expression->scope = scope;
     return expression;
   }
 
@@ -189,6 +152,7 @@ ast_ *parse_unary_expression(parser_ *parser, scope_ *scope)
     expression = init_ast(AST_BOOLEAN_EXPRESSION);
     expression->op = strdup("NOT");
     expression->right = right_expression;
+    expression->scope = scope;
     return expression;
   }
 
@@ -268,7 +232,7 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
     expression->constant = is_constant;
     expression->userinput = is_userinput;
   }
-
+  expression->scope = scope;
   return expression;
 }
 
@@ -307,7 +271,7 @@ ast_ *parse_literal(parser_ *parser, scope_ *scope)
     expression->string_value = strdup(parser->current_token->value);
     parser_expect(parser, TOKEN_STRING);
   }
-
+  expression->scope = scope;
   return expression;
 }
 
@@ -331,6 +295,7 @@ ast_ *parse_array(parser_ *parser, scope_ *scope)
   }
 
   parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
+  expression->scope = scope;
   return expression;
 }
 // Helper function to handle arithmetic operations
@@ -350,6 +315,7 @@ ast_ *parse_arithmetic_operation(parser_ *parser, ast_ *left, scope_ *scope)
 
   arith_op->left = left;
   arith_op->right = right_expression;
+  arith_op->scope = scope;
   return arith_op;
 }
 
@@ -370,6 +336,7 @@ ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
 
   rel_op->left = left;
   rel_op->right = right_expression;
+  rel_op->scope = scope;
   return rel_op;
 }
 
@@ -390,6 +357,7 @@ ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
 
   bool_op->left = left;
   bool_op->right = right_expression;
+  bool_op->scope = scope;
   return bool_op;
 }
 
@@ -470,11 +438,12 @@ ast_ *handle_id(parser_ *parser, scope_ *scope)
     ast_ *assignment = init_ast(AST_ASSIGNMENT);
     assignment->lhs = lhs;
     assignment->rhs = rhs;
-
+    assignment->scope = scope;
     return assignment; // Return the full assignment AST node
   }
 
   // If no assignment token is found, treat it as a standalone expression
+  lhs->scope = scope;
   return lhs;
 }
 
@@ -528,6 +497,7 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
 
     parser_expect(parser, TOKEN_ID); // Consume 'ENDWHILE'
   }
+  loop_ast->scope = scope;
   return loop_ast;
 }
 
@@ -609,7 +579,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDFOR'
-
+  loop_ast->scope = scope;
   return loop_ast;
 }
 
@@ -705,7 +675,7 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
   // Set the parsed ELSE IF conditions and bodies into the AST
   selection_ast->else_if_conditions = else_if_conditions;
   selection_ast->else_if_bodies = else_if_bodies;
-
+  selection_ast->scope = scope;
   return selection_ast;
 }
 
@@ -788,7 +758,7 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDRECORD'
-
+  record_ast->scope = scope;
   return record_ast;
 }
 
@@ -849,7 +819,7 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDSUBROUTINE'
-
+  subroutine_ast->scope = scope;
   return subroutine_ast;
 }
 
@@ -863,6 +833,7 @@ ast_ *handle_return(parser_ *parser, scope_ *scope)
 
   // Parse the expression following the RETURN keyword
   return_ast->return_value = parse_expression(parser, scope);
+  return_ast->scope = scope;
 
   return return_ast;
 }
@@ -892,5 +863,6 @@ ast_ *handle_output(parser_ *parser, scope_ *scope)
     }
   } while (parser->current_token->type != TOKEN_NEWLINE);
 
+  output_ast->scope = scope;
   return output_ast;
 }

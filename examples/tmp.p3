@@ -1,0 +1,4 @@
+name <- "John Doe"
+OUTPUT name
+name <- "Dave Smith"
+OUTPUT name

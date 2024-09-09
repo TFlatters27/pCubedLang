@@ -119,6 +119,10 @@ typedef struct AST_STRUCT
 // Function to initialize an AST node of a given type.
 ast_ *init_ast(enum ast_type type);
 
+ast_ **init_ast_list();
+
+void add_ast_to_list(ast_ ***list, ast_ *new_ast);
+
 // Function to convert an AST type to a string representation.
 const char *ast_type_to_string(enum ast_type type);
 

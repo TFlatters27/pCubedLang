@@ -122,6 +122,45 @@ ast_ *init_ast(enum ast_type type)
   return ast;
 }
 
+ast_ **init_ast_list()
+{
+  ast_ **list = malloc(sizeof(ast_ *));
+  if (list == NULL)
+  {
+    fprintf(stderr, "Error: Memory allocation failed during AST list initialization.\n");
+    return NULL;
+  }
+  list[0] = NULL;
+  return list;
+}
+
+void add_ast_to_list(ast_ ***list, ast_ *new_ast)
+{
+  size_t count = 0;
+
+  if (*list == NULL)
+  {
+    fprintf(stderr, "Error: Cannot add AST to list. The list is NULL. Ensure the list is initialized before adding elements.\n");
+    return;
+  }
+
+  while ((*list)[count] != NULL)
+  {
+    count++;
+  }
+
+  ast_ **temp = realloc(*list, sizeof(ast_ *) * (count + 2));
+  if (temp == NULL)
+  {
+    fprintf(stderr, "Error: Memory reallocation failed while expanding AST list. Current list size: %zu elements.\n", count);
+    return;
+  }
+
+  *list = temp;
+  (*list)[count] = new_ast;
+  (*list)[count + 1] = NULL;
+}
+
 // Function to convert an AST type to a string representation.
 const char *ast_type_to_string(enum ast_type type)
 {

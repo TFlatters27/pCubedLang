@@ -1,37 +1,67 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "include/lexer.h"
 #include "include/parser.h"
 #include "include/scope.h"
 #include "include/io.h"
 #include "include/interpreter.h"
 
+#define MAX_LIMIT 20
+
+void print_help()
+{
+  printf("Usage:\np3 <filename>\n");
+  exit(1);
+}
+
 int main(int argc, char *argv[])
 {
-  char *file_contents = get_file_contents(argv[1]);
-
-  // Initialize the lexer with the file contents
-  lexer_ *lexer = init_lexer(file_contents);
-
-  // token_ *token = NULL;
-  // while ((token = lexer_next(lexer))->type != TOKEN_EOF)
-  // {
-  //   printf("{%s::%s}\n", token_type_to_string(token->type), token->value);
-  // }
-
-  parser_ *parser = init_parser(lexer);
-  scope_ *scope = init_scope();
-  ast_ *ast = parser_parse(parser, scope);
-
-  int i = 0;
-  while (ast->compound_value[i] != NULL)
+  if (argc >= 2)
   {
-    i++;
+    for (int i = 1; i < argc; i++)
+    {
+      int len = strlen(argv[i]);
+      char *extension = &argv[i][len - 3]; // For ".p3" extension
+      if (strcmp(extension, ".p3") == 0)
+      {
+        char *file_contents = get_file_contents(argv[i]);
+
+        // Initialize components
+        lexer_ *lexer = init_lexer(file_contents);
+        parser_ *parser = init_parser(lexer);
+        scope_ *scope = init_scope();
+        interpreter_ *interpreter = init_interpreter();
+
+        // Parse and interpret
+        ast_ *root = parser_parse(parser, scope);
+        interpreter_process(interpreter, root);
+      }
+      else
+      {
+        print_help();
+      }
+    }
   }
+  else
+  {
+    char input[MAX_LIMIT];
+    printf("Welcome to the P-cubed language v.1.0.0\nCreated by mxcury\nTo exit REPL mode call `>>> EXIT`\n");
+    while (1)
+    {
+      printf(">>> ");
+      fgets(input, MAX_LIMIT, stdin);
 
-  printf("********************************\n");
-  printf("AST Type: %s\n", ast_type_to_string(ast->type));
-  printf("AST statements compiled: %d\n", i);
+      // Initialize components for REPL mode
+      lexer_ *lexer = init_lexer(input);
+      parser_ *parser = init_parser(lexer);
+      scope_ *scope = init_scope();
+      interpreter_ *interpreter = init_interpreter();
 
+      // Parse and interpret user input
+      ast_ *root = parser_parse(parser, scope);
+      interpreter_process(interpreter, root);
+    }
+  }
   return 0;
 }
