@@ -1,4 +1,2 @@
-name <- "John Doe"
-OUTPUT name
-name <- "Dave Smith"
-OUTPUT name
+input <- USERINPUT
+OUTPUT input

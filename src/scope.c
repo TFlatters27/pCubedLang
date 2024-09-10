@@ -68,10 +68,38 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
   {
     if (strcmp(scope->variable_definitions[i]->lhs->variable_name, new_var_name) == 0)
     {
+      // Check if the existing variable is a constant
+      if (scope->variable_definitions[i]->lhs->constant == 1)
+      {
+        fprintf(stderr, "Error: Cannot overwrite constant variable '%s'.\n", new_var_name);
+        return NULL; // Do not overwrite and return an error
+      }
+
       // Overwrite the existing variable definition
       scope->variable_definitions[i]->lhs = vdef->lhs;
       scope->variable_definitions[i]->rhs = vdef->rhs;
       return scope->variable_definitions[i]; // Return the overwritten variable
+    }
+  }
+
+  // Check if user input is required for the new variable
+  if (vdef->lhs->userinput == 1)
+  {
+    printf("%s <- ", new_var_name);
+
+    // Allocate buffer for user input
+    char input_buffer[1024]; // Adjust size as needed
+    if (fgets(input_buffer, sizeof(input_buffer), stdin) != NULL)
+    {
+      // Remove newline character if present
+      size_t len = strlen(input_buffer);
+      if (len > 0 && input_buffer[len - 1] == '\n')
+      {
+        input_buffer[len - 1] = '\0';
+      }
+
+      // Store the input as the variable's value (in vdef->rhs or a suitable location)
+      vdef->rhs->string_value = strdup(input_buffer); // Assuming rhs stores a string_value
     }
   }
 
