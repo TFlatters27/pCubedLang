@@ -457,35 +457,67 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
 
 ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *node)
 {
-  // Evaluate left and right sides
-  ast_ *left_val = interpreter_process(interpreter, node->left);
-  ast_ *right_val = interpreter_process(interpreter, node->right);
+  // Evaluate left and right sides if applicable (AND/OR need both sides, NOT needs only one)
+  ast_ *left_val = NULL;
+  ast_ *right_val = NULL;
 
-  // Ensure both values are not null before proceeding
-  if ((left_val->type == AST_INTEGER && left_val->int_value.null == 1) ||
-      (right_val->type == AST_INTEGER && right_val->int_value.null == 1) ||
-      (left_val->type == AST_REAL && left_val->real_value.null == 1) ||
-      (right_val->type == AST_REAL && right_val->real_value.null == 1) ||
-      (left_val->type == AST_CHARACTER && left_val->char_value.null == 1) ||
-      (right_val->type == AST_CHARACTER && right_val->char_value.null == 1) ||
-      (left_val->type == AST_STRING && left_val->string_value == NULL) ||
-      (right_val->type == AST_STRING && right_val->string_value == NULL))
+  if (strcmp(node->op, "NOT") != 0)
   {
-    printf("Error: Null value in boolean expression\n");
-    exit(1);
+    left_val = interpreter_process(interpreter, node->left);
+    right_val = interpreter_process(interpreter, node->right);
+
+    // Ensure both values are not null before proceeding
+    if ((left_val->type == AST_INTEGER && left_val->int_value.null == 1) ||
+        (right_val->type == AST_INTEGER && right_val->int_value.null == 1) ||
+        (left_val->type == AST_REAL && left_val->real_value.null == 1) ||
+        (right_val->type == AST_REAL && right_val->real_value.null == 1) ||
+        (left_val->type == AST_CHARACTER && left_val->char_value.null == 1) ||
+        (right_val->type == AST_CHARACTER && right_val->char_value.null == 1) ||
+        (left_val->type == AST_STRING && left_val->string_value == NULL) ||
+        (right_val->type == AST_STRING && right_val->string_value == NULL))
+    {
+      printf("Error: Null value in boolean expression\n");
+      exit(1);
+    }
+
+    // Ensure both sides are of comparable types (int, real, char, string)
+    if (left_val->type != right_val->type)
+    {
+      printf("Error: Type mismatch in boolean expression\n");
+      exit(1);
+    }
+  }
+  else
+  {
+    // Evaluate only the right side for 'NOT' operation
+    right_val = interpreter_process(interpreter, node->right);
+    if ((right_val->type == AST_INTEGER && right_val->int_value.null == 1) ||
+        (right_val->type == AST_REAL && right_val->real_value.null == 1) ||
+        (right_val->type == AST_CHARACTER && right_val->char_value.null == 1) ||
+        (right_val->type == AST_STRING && right_val->string_value == NULL))
+    {
+      printf("Error: Null value in boolean expression\n");
+      exit(1);
+    }
   }
 
   ast_ *result = init_ast(AST_BOOLEAN);
 
-  // Ensure both sides are of comparable types (int, real, char, string)
-  if (left_val->type != right_val->type)
+  // Handle logical operations 'AND' and 'OR'
+  if (strcmp(node->op, "AND") == 0)
   {
-    printf("Error: Type mismatch in boolean expression\n");
-    exit(1);
+    result->boolean_value.value = (left_val->boolean_value.value && right_val->boolean_value.value);
   }
-
+  else if (strcmp(node->op, "OR") == 0)
+  {
+    result->boolean_value.value = (left_val->boolean_value.value || right_val->boolean_value.value);
+  }
+  else if (strcmp(node->op, "NOT") == 0)
+  {
+    result->boolean_value.value = !right_val->boolean_value.value;
+  }
   // Handle comparisons for int and real
-  if (left_val->type == AST_INTEGER || left_val->type == AST_REAL)
+  else if (left_val->type == AST_INTEGER || left_val->type == AST_REAL)
   {
     double left_num = (left_val->type == AST_INTEGER) ? left_val->int_value.value : left_val->real_value.value;
     double right_num = (right_val->type == AST_INTEGER) ? right_val->int_value.value : right_val->real_value.value;
