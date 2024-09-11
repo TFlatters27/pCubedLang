@@ -41,6 +41,30 @@ typedef struct AST_RECORD_ELEMENT_STRUCT
     int dimension;           // Dimension of the element (e.g., [] or [[]])
 } ast_record_element_;
 
+typedef struct
+{
+    int value;
+    int null; // Default value is 1
+} NullableInt;
+
+typedef struct
+{
+    float value;
+    int null; // Default value is 1
+} NullableFloat;
+
+typedef struct
+{
+    char value;
+    int null; // Default value is 1
+} NullableChar;
+
+typedef struct
+{
+    int value; // 0 for false, 1 for true
+    int null;  // Default value is 1
+} NullableBool;
+
 // Structure representing an Abstract Syntax Tree (AST) node.
 typedef struct AST_STRUCT
 {
@@ -51,11 +75,13 @@ typedef struct AST_STRUCT
     struct AST_STRUCT **compound_value; // List of statements (if this node is a compound statement)
 
     /* AST_LITERAL */
-    int int_value;                      // Integer value (if this node is an integer literal)
-    float real_value;                   // Real value (if this node is a floating-point literal)
-    char char_value;                    // Character value (if this node is a character literal)
-    int boolean_value;                  // Boolean value (if this node is a boolean literal)
-    char *string_value;                 // String value (if this node is a string literal)
+    NullableInt int_value;      // Integer value (if this node is an integer literal)
+    NullableFloat real_value;   // Real value (if this node is a floating-point literal)
+    NullableChar char_value;    // Character value (if this node is a character literal)
+    NullableBool boolean_value; // Boolean value (if this node is a boolean literal)
+
+    char *string_value; // String value (if this node is a string literal)
+
     struct AST_STRUCT **array_elements; // List of elements (if this node is an array literal)
     int array_size;                     // Number of elements (if this node is an array literal
 
@@ -77,7 +103,7 @@ typedef struct AST_STRUCT
     /* AST_INSTANTIATION */
     char *class_name;              // Name of the class
     struct AST_STRUCT **arguments; // List of arguments (for function calls/instantiations)
-    int arguments_count; // Number of arguments
+    int arguments_count;           // Number of arguments
 
     /* AST_EXPRESSION */
     struct AST_STRUCT *left;  // Left operand (if this node is a binary operation)
@@ -87,12 +113,12 @@ typedef struct AST_STRUCT
     /* AST_RECORD */
     char *record_name;                     // Name of the record (e.g., "Student")
     ast_record_element_ **record_elements; // List of element declarations (e.g., fields like "name", "age")
-    int field_count; // Number of fields in the record
+    int field_count;                       // Number of fields in the record
 
     /* AST_SUBROUTINE */
     char *subroutine_name;          // Name of the subroutine
     struct AST_STRUCT **parameters; // List of parameters (AST_VARIABLE nodes)
-    int parameter_count; // Number of parameters in the subroutine
+    int parameter_count;            // Number of parameters in the subroutine
     struct AST_STRUCT **body;       // Body of the subroutine (List of AST nodes)
 
     /* AST_RETURN */
@@ -129,6 +155,10 @@ void add_ast_to_list(ast_ ***list, ast_ *new_ast);
 
 // Function to convert an AST type to a string representation.
 const char *ast_type_to_string(enum ast_type type);
+
+int valid(ast_ *ast);
+void print_indent(int indent);
+void print_ast_literal(ast_ *node, int indent);
 
 void print_ast(ast_ *ast, int indent);
 

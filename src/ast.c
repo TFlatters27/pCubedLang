@@ -8,120 +8,56 @@ ast_ *init_ast(enum ast_type type)
   ast_ *ast = calloc(1, sizeof(struct AST_STRUCT));
   ast->type = type;
 
-  // Initialize common fields
+  // Initialize all fields to default "null" state
   ast->scope = NULL;
 
-  // Initialize based on the specific AST type
-  switch (type)
-  {
-  case AST_COMPOUND:
-    ast->compound_value = NULL;
-    break;
+  ast->int_value.null = 1;
+  ast->int_value.value = 0;
+  ast->real_value.null = 1;
+  ast->real_value.value = 0.0;
+  ast->char_value.null = 1;
+  ast->char_value.value = '\0';
+  ast->string_value = NULL;
+  ast->boolean_value.null = 1;
+  ast->boolean_value.value = 0;
+  ast->array_elements = NULL;
+  ast->array_size = 0;
 
-  case AST_INTEGER:
-    ast->int_value = 0;
-    break;
-
-  case AST_REAL:
-    ast->real_value = 0.0;
-    break;
-
-  case AST_CHARACTER:
-    ast->char_value = '\0';
-    break;
-
-  case AST_STRING:
-    ast->string_value = NULL;
-    break;
-
-  case AST_BOOLEAN:
-    ast->boolean_value = 0;
-    break;
-
-  case AST_ARRAY:
-    ast->array_elements = NULL;
-    ast->array_size = 0;
-    break;
-
-  case AST_ASSIGNMENT:
-    ast->lhs = NULL;
-    ast->rhs = NULL;
-    ast->constant = 0;
-    ast->userinput = 0;
-    break;
-
-  case AST_VARIABLE:
-    ast->variable_name = NULL;
-    break;
-
-  case AST_RECORD_ACCESS:
-    ast->field_name = NULL;
-    break;
-
-  case AST_ARRAY_ACCESS:
-    ast->index = NULL;
-    break;
-
-  case AST_INSTANTIATION:
-    ast->class_name = NULL;
-    ast->arguments = NULL;
-    ast->arguments_count = 0;
-    break;
-
-  case AST_ARITHMETIC_EXPRESSION:
-  case AST_BOOLEAN_EXPRESSION:
-    ast->left = NULL;
-    ast->right = NULL;
-    ast->op = NULL;
-    break;
-
-  case AST_RECORD:
-    ast->record_name = NULL;
-    ast->record_elements = NULL;
-    ast->field_count = 0;
-    break;
-
-  case AST_SUBROUTINE:
-    ast->subroutine_name = NULL;
-    ast->parameters = NULL;
-    ast->parameter_count = 0;
-    ast->body = NULL;
-    break;
-
-  case AST_RETURN:
-    ast->return_value = NULL;
-    break;
-
-  case AST_OUTPUT:
-    ast->output_expressions = NULL;
-    break;
-
-  case AST_DEFINITE_LOOP:
-    ast->loop_variable = NULL;
-    ast->start_expr = NULL;
-    ast->end_expr = NULL;
-    ast->step_expr = NULL;
-    ast->collection_expr = NULL;
-    break;
-
-  case AST_INDEFINITE_LOOP:
-    ast->condition = NULL;
-    ast->loop_body = NULL;
-    break;
-
-  case AST_SELECTION:
-    ast->if_condition = NULL;
-    ast->if_body = NULL;
-    ast->else_if_conditions = NULL;
-    ast->else_if_bodies = NULL;
-    ast->else_body = NULL;
-    break;
-
-  case AST_NOOP:
-  default:
-    // No-op doesn't need initialization beyond the type
-    break;
-  }
+  ast->compound_value = NULL;
+  ast->lhs = NULL;
+  ast->rhs = NULL;
+  ast->constant = 0;
+  ast->userinput = 0;
+  ast->variable_name = NULL;
+  ast->field_name = NULL;
+  ast->index = NULL;
+  ast->class_name = NULL;
+  ast->arguments = NULL;
+  ast->arguments_count = 0;
+  ast->left = NULL;
+  ast->right = NULL;
+  ast->op = NULL;
+  ast->record_name = NULL;
+  ast->record_elements = NULL;
+  ast->field_count = 0;
+  ast->subroutine_name = NULL;
+  ast->parameters = NULL;
+  ast->parameter_count = 0;
+  ast->body = NULL;
+  ast->return_value = NULL;
+  ast->output_expressions = NULL;
+  ast->loop_variable = NULL;
+  ast->start_expr = NULL;
+  ast->end_expr = NULL;
+  ast->step_expr = NULL;
+  ast->collection_expr = NULL;
+  ast->condition = NULL;
+  ast->loop_body = NULL;
+  ast->if_condition = NULL;
+  ast->if_body = NULL;
+  ast->else_if_conditions = NULL;
+  ast->else_if_bodies = NULL;
+  ast->else_body = NULL;
 
   return ast;
 }
@@ -232,17 +168,17 @@ int valid(ast_ *ast)
     break;
 
   case AST_INTEGER:
-    if (ast->int_value != 0)
+    if (ast->int_value.null == 0)
       return 0;
     break;
 
   case AST_REAL:
-    if (ast->real_value != 0.0)
+    if (ast->real_value.null == 0)
       return 0;
     break;
 
   case AST_CHARACTER:
-    if (ast->char_value != '\0')
+    if (ast->char_value.null == 0)
       return 0;
     break;
 
@@ -252,7 +188,7 @@ int valid(ast_ *ast)
     break;
 
   case AST_BOOLEAN:
-    if (ast->boolean_value != 0)
+    if (ast->boolean_value.null == 0)
       return 0;
     break;
 
@@ -345,33 +281,50 @@ void print_indent(int indent)
 
 void print_ast_literal(ast_ *node, int indent)
 {
-  switch (node->type)
+
+  if (node->int_value.null == 0)
   {
-  case AST_INTEGER:
+    printf("Integer: %d\n", node->int_value.value);
+  }
+  else
+  {
+    printf("Integer: null\n");
+  }
+  if (node->real_value.null == 0)
+  {
+    printf("Real: %f\n", node->real_value.value);
+  }
+  else
+  {
+    printf("Real: null\n");
+  }
+  if (node->char_value.null == 0)
+  {
+    printf("Character: %c\n", node->char_value.value);
+  }
+  else
+  {
+    printf("Character: null\n");
+  }
+  if (node->string_value != NULL)
+  {
     print_indent(indent);
-    printf("Integer: %d\n", node->int_value);
-    break;
-  case AST_REAL:
-    print_indent(indent);
-    printf("Real: %f\n", node->real_value);
-    break;
-  case AST_CHARACTER:
-    print_indent(indent);
-    printf("Character: '%c'\n", node->char_value);
-    break;
-  case AST_STRING:
-    if (node->string_value)
-    {
-      print_indent(indent);
-      printf("String: \"%s\"\n", node->string_value);
-    }
-    break;
-  case AST_BOOLEAN:
-    print_indent(indent);
-    printf("Boolean: %s\n", node->boolean_value ? "true" : "false");
-    break;
-  case AST_ARRAY:
-    print_indent(indent);
+    printf("String: \"%s\"\n", node->string_value);
+  }
+  else
+  {
+    printf("String : null\n");
+  }
+  if (node->boolean_value.null == 0)
+  {
+    printf("Boolean: %s\n", node->boolean_value.value ? "true" : "false");
+  }
+  else
+  {
+    printf("Boolean: null\n");
+  }
+  if (node->array_elements != NULL && node->array_size != 0)
+  {
     printf("Array:\n");
     int i = 0;
     while (node->array_elements[i] != NULL)
@@ -381,10 +334,92 @@ void print_ast_literal(ast_ *node, int indent)
     }
     print_indent(indent);
     printf("Array size: %d\n", node->array_size);
-    break;
-  default:
-    break;
   }
+  else
+  {
+    printf("Array: null\n");
+  }
+
+  // switch (node->type)
+  // {
+  // case AST_INTEGER:
+  //   print_indent(indent);
+  //   if (node->int_value.null == 0)
+  //   {
+  //     printf("Integer: %d\n", node->int_value.value);
+  //   }
+  //   else
+  //   {
+  //     printf("Integer: null\n");
+  //   }
+  //   break;
+  // case AST_REAL:
+  //   print_indent(indent);
+  //   if (node->real_value.null == 0)
+  //   {
+  //     printf("Real: %f\n", node->real_value.value);
+  //   }
+  //   else
+  //   {
+  //     printf("Real: null\n");
+  //   }
+  //   break;
+  // case AST_CHARACTER:
+  //   print_indent(indent);
+  //   if (node->char_value.null == 0)
+  //   {
+  //     printf("Character: %c\n", node->char_value.value);
+  //   }
+  //   else
+  //   {
+  //     printf("Character: null\n");
+  //   }
+  //   break;
+  // case AST_STRING:
+  //   if (node->string_value != NULL)
+  //   {
+  //     print_indent(indent);
+  //     printf("String: \"%s\"\n", node->string_value);
+  //   }
+  //   else
+  //   {
+  //     printf("String : null\n");
+  //   }
+  //   break;
+  // case AST_BOOLEAN:
+  //   print_indent(indent);
+  //   if (node->boolean_value.null == 0)
+  //   {
+  //     printf("Boolean: %s\n", node->boolean_value.value ? "true" : "false");
+  //   }
+  //   else
+  //   {
+  //     printf("Boolean: null\n");
+  //   }
+  //   break;
+  // case AST_ARRAY:
+  //   print_indent(indent);
+  //   if (node->array_elements != NULL && node->array_size != 0)
+  //   {
+  //     printf("Array:\n");
+  //     int i = 0;
+  //     while (node->array_elements[i] != NULL)
+  //     {
+  //       print_ast(node->array_elements[i], indent + 1);
+  //       i++;
+  //     }
+  //     print_indent(indent);
+  //     printf("Array size: %d\n", node->array_size);
+  //   }
+  //   else
+  //   {
+  //     printf("Array: null\n");
+  //   }
+
+  //   break;
+  // default:
+  //   break;
+  // }
 }
 
 void print_ast(ast_ *node, int indent)

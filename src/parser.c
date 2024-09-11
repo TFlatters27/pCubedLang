@@ -69,7 +69,6 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
     {
       if (ast_statement->type != AST_NOOP)
       {
-        print_ast(ast_statement, 0);
         ast_statement->scope = scope;
         add_ast_to_list(&(compound->compound_value), ast_statement);
       }
@@ -220,28 +219,32 @@ ast_ *parse_literal(parser_ *parser, scope_ *scope)
   if (parser->current_token->type == TOKEN_INT)
   {
     expression = init_ast(AST_INTEGER);
-    expression->int_value = atoi(parser->current_token->value);
+    expression->int_value.value = atoi(parser->current_token->value);
+    expression->int_value.null = 0;
     expression->scope = scope;
     parser_expect(parser, TOKEN_INT);
   }
   else if (parser->current_token->type == TOKEN_REAL)
   {
     expression = init_ast(AST_REAL);
-    expression->real_value = atof(parser->current_token->value);
+    expression->real_value.value = atof(parser->current_token->value);
+    expression->real_value.null = 0;
     expression->scope = scope;
     parser_expect(parser, TOKEN_REAL);
   }
   else if (parser->current_token->type == TOKEN_CHAR)
   {
     expression = init_ast(AST_CHARACTER);
-    expression->char_value = parser->current_token->value[0];
+    expression->char_value.value = parser->current_token->value[0];
+    expression->char_value.null = 0;
     expression->scope = scope;
     parser_expect(parser, TOKEN_CHAR);
   }
   else if (parser->current_token->type == TOKEN_BOOL)
   {
     expression = init_ast(AST_BOOLEAN);
-    expression->boolean_value = strcmp(parser->current_token->value, "True") == 0;
+    expression->boolean_value.value = strcmp(parser->current_token->value, "True") == 0;
+    expression->boolean_value.null = 0;
     expression->scope = scope;
     parser_expect(parser, TOKEN_BOOL);
   }
@@ -551,7 +554,8 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
     {
       // Default step value if not specified
       loop_ast->step_expr = init_ast(AST_INTEGER);
-      loop_ast->step_expr->int_value = 1; // Default to step 1
+      loop_ast->step_expr->int_value.value = 1;
+      loop_ast->step_expr->int_value.null = 0; // Default to step 1
     }
   }
   else if (strcmp(parser->current_token->value, "IN") == 0)

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
 ast_ *concatenate(ast_ *left_val, ast_ *right_val)
 {
   char *result = NULL;
@@ -11,52 +12,84 @@ ast_ *concatenate(ast_ *left_val, ast_ *right_val)
   // Handle character + character
   if (left_val->type == AST_CHARACTER && right_val->type == AST_CHARACTER)
   {
-    result = (char *)malloc(3); // 2 chars + null terminator
-    if (result == NULL)
+    if (left_val->char_value.null == 0 && right_val->char_value.null == 0)
     {
-      perror("Failed to allocate memory for char concatenation");
+      result = (char *)malloc(3); // 2 chars + null terminator
+      if (result == NULL)
+      {
+        perror("Failed to allocate memory for char concatenation");
+        exit(1);
+      }
+      result[0] = left_val->char_value.value;  // Access the char value
+      result[1] = right_val->char_value.value; // Access the char value
+      result[2] = '\0';
+    }
+    else
+    {
+      perror("Concatenation error: One of the character values is null");
       exit(1);
     }
-    result[0] = left_val->char_value;
-    result[1] = right_val->char_value;
-    result[2] = '\0';
   }
   // Handle string + character
   else if (left_val->type == AST_STRING && right_val->type == AST_CHARACTER)
   {
-    result = (char *)malloc(strlen(left_val->string_value) + 2); // 1 char + null terminator
-    if (result == NULL)
+    if (left_val->string_value != NULL && right_val->char_value.null == 0)
     {
-      perror("Failed to allocate memory for string-char concatenation");
+      result = (char *)malloc(strlen(left_val->string_value) + 2); // 1 char + null terminator
+      if (result == NULL)
+      {
+        perror("Failed to allocate memory for string-char concatenation");
+        exit(1);
+      }
+      strcpy(result, left_val->string_value);
+      result[strlen(left_val->string_value)] = right_val->char_value.value; // Access the char value
+      result[strlen(left_val->string_value) + 1] = '\0';
+    }
+    else
+    {
+      perror("Concatenation error: One of the values is null");
       exit(1);
     }
-    strcpy(result, left_val->string_value);
-    result[strlen(left_val->string_value)] = right_val->char_value;
-    result[strlen(left_val->string_value) + 1] = '\0';
   }
   // Handle character + string
   else if (left_val->type == AST_CHARACTER && right_val->type == AST_STRING)
   {
-    result = (char *)malloc(2 + strlen(right_val->string_value)); // 1 char + string + null terminator
-    if (result == NULL)
+    if (left_val->char_value.null == 0 && right_val->string_value != NULL)
     {
-      perror("Failed to allocate memory for char-string concatenation");
+      result = (char *)malloc(2 + strlen(right_val->string_value)); // 1 char + string + null terminator
+      if (result == NULL)
+      {
+        perror("Failed to allocate memory for char-string concatenation");
+        exit(1);
+      }
+      result[0] = left_val->char_value.value; // Access the char value
+      strcpy(&result[1], right_val->string_value);
+    }
+    else
+    {
+      perror("Concatenation error: One of the values is null");
       exit(1);
     }
-    result[0] = left_val->char_value;
-    strcpy(&result[1], right_val->string_value);
   }
   // Handle string + string
   else if (left_val->type == AST_STRING && right_val->type == AST_STRING)
   {
-    result = (char *)malloc(strlen(left_val->string_value) + strlen(right_val->string_value) + 1);
-    if (result == NULL)
+    if (left_val->string_value != NULL && right_val->string_value != NULL)
     {
-      perror("Failed to allocate memory for string-string concatenation");
+      result = (char *)malloc(strlen(left_val->string_value) + strlen(right_val->string_value) + 1);
+      if (result == NULL)
+      {
+        perror("Failed to allocate memory for string-string concatenation");
+        exit(1);
+      }
+      strcpy(result, left_val->string_value);
+      strcat(result, right_val->string_value);
+    }
+    else
+    {
+      perror("Concatenation error: One of the string values is null");
       exit(1);
     }
-    strcpy(result, left_val->string_value);
-    strcat(result, right_val->string_value);
   }
   // Invalid types for concatenation
   else
@@ -222,13 +255,13 @@ ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
   if (!array)
   {
     fprintf(stderr, "Error: could not fetch array from scope\n");
-    return init_ast(AST_NOOP);
+    exit(1);
   }
 
   if (array->type != AST_ARRAY)
   {
     fprintf(stderr, "Error: %s is not defined as an array.\n", node->variable_name);
-    return init_ast(AST_NOOP);
+    exit(1);
   }
 
   ast_ *current_array = array;
@@ -242,21 +275,28 @@ ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
     if (index_value->type != AST_INTEGER)
     {
       printf("Error: Array index must be an integer.\n");
-      return init_ast(AST_NOOP);
+      exit(1);
     }
-
-    int index = index_value->int_value;
-
-    // Ensure that current_array is an array and the index is within bounds
-    if (current_array->type != AST_ARRAY || index < 0 || index >= current_array->array_size)
+    if (index_value->int_value.null == 0)
     {
-      printf("Error: Array index out of bounds or invalid array access.\n");
-      return init_ast(AST_NOOP);
-    }
+      int index = index_value->int_value.value;
 
-    // Move to the next nested array or value
-    current_array = current_array->array_elements[index];
-    b++;
+      // Ensure that current_array is an array and the index is within bounds
+      if (current_array->type != AST_ARRAY || index < 0 || index >= current_array->array_size)
+      {
+        printf("Error: Array index out of bounds or invalid array access.\n");
+        exit(1);
+      }
+
+      // Move to the next nested array or value
+      current_array = current_array->array_elements[index];
+      b++;
+    }
+    else
+    {
+      printf("Error: Array index cannot be null.\n");
+      exit(1);
+    }
   }
 
   return current_array;
@@ -269,8 +309,6 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
 }
 ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ *node)
 {
-  // printf(">> arithmetic_expression <<\n");
-
   ast_ *left_val = NULL;
   ast_ *right_val = NULL;
 
@@ -283,17 +321,30 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   // Process the right side, which should always exist
   right_val = interpreter_process(interpreter, node->right);
 
+  // Check for null values on both sides before performing operations
+  if (left_val != NULL && left_val->int_value.null == 1)
+  {
+    perror("Left operand is null");
+    exit(1);
+  }
+
+  if (right_val != NULL && right_val->int_value.null == 1)
+  {
+    perror("Right operand is null");
+    exit(1);
+  }
+
   // Handle unary minus operation
   if ((strcmp(node->op, "-") == 0) && node->left == NULL)
   {
-    if (right_val->type == AST_INTEGER)
+    if (right_val->type == AST_INTEGER && right_val->int_value.null == 0)
     {
-      right_val->int_value = -(right_val->int_value);
+      right_val->int_value.value = -(right_val->int_value.value);
       return right_val;
     }
-    else if (right_val->type == AST_REAL)
+    else if (right_val->type == AST_REAL && right_val->real_value.null == 0)
     {
-      right_val->real_value = -(right_val->real_value);
+      right_val->real_value.value = -(right_val->real_value.value);
       return right_val;
     }
   }
@@ -301,88 +352,100 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   // Handle binary operations
   if (strcmp(node->op, "+") == 0)
   {
-    if ((left_val->type == AST_CHARACTER || left_val->type == AST_STRING) &&
-        (right_val->type == AST_CHARACTER || right_val->type == AST_STRING))
+    if ((left_val->type == AST_CHARACTER && left_val->char_value.null == 0) ||
+        (right_val->type == AST_CHARACTER && right_val->char_value.null == 0))
     {
       return concatenate(left_val, right_val); // General concatenation for char/string
     }
 
-    else if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    else if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
+             left_val->int_value.null == 0 && right_val->int_value.null == 0)
     {
-      left_val->int_value += right_val->int_value;
+      left_val->int_value.value += right_val->int_value.value;
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
+             left_val->real_value.null == 0 && right_val->real_value.null == 0)
     {
-      left_val->real_value += right_val->real_value;
+      left_val->real_value.value += right_val->real_value.value;
       return left_val;
     }
   }
   else if (strcmp(node->op, "-") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
+        left_val->int_value.null == 0 && right_val->int_value.null == 0)
     {
-      left_val->int_value -= right_val->int_value;
+      left_val->int_value.value -= right_val->int_value.value;
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
+             left_val->real_value.null == 0 && right_val->real_value.null == 0)
     {
-      left_val->real_value -= right_val->real_value;
+      left_val->real_value.value -= right_val->real_value.value;
       return left_val;
     }
   }
   else if (strcmp(node->op, "*") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
+        left_val->int_value.null == 0 && right_val->int_value.null == 0)
     {
-      left_val->int_value *= right_val->int_value;
+      left_val->int_value.value *= right_val->int_value.value;
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
+             left_val->real_value.null == 0 && right_val->real_value.null == 0)
     {
-      left_val->real_value *= right_val->real_value;
+      left_val->real_value.value *= right_val->real_value.value;
       return left_val;
     }
   }
   else if (strcmp(node->op, "/") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
+        left_val->int_value.null == 0 && right_val->int_value.null == 0)
     {
-      left_val->int_value /= right_val->int_value;
+      left_val->int_value.value /= right_val->int_value.value;
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
+             left_val->real_value.null == 0 && right_val->real_value.null == 0)
     {
-      left_val->real_value /= right_val->real_value;
+      left_val->real_value.value /= right_val->real_value.value;
       return left_val;
     }
   }
   else if (strcmp(node->op, "^") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
+        left_val->int_value.null == 0 && right_val->int_value.null == 0)
     {
-      left_val->int_value = pow(left_val->int_value, right_val->int_value);
+      left_val->int_value.value = pow(left_val->int_value.value, right_val->int_value.value);
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
+             left_val->real_value.null == 0 && right_val->real_value.null == 0)
     {
-      left_val->real_value = pow(left_val->real_value, right_val->real_value);
+      left_val->real_value.value = pow(left_val->real_value.value, right_val->real_value.value);
       return left_val;
     }
   }
   else if (strcmp(node->op, "DIV") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
+        left_val->int_value.null == 0 && right_val->int_value.null == 0)
     {
-      left_val->int_value /= right_val->int_value; // Integer division
+      left_val->int_value.value /= right_val->int_value.value; // Integer division
       return left_val;
     }
   }
   else if (strcmp(node->op, "MOD") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
+        left_val->int_value.null == 0 && right_val->int_value.null == 0)
     {
-      left_val->int_value %= right_val->int_value;
+      left_val->int_value.value %= right_val->int_value.value;
       return left_val;
     }
   }
@@ -394,9 +457,114 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
 
 ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> boolean_expression <<\n");
-  return init_ast(AST_NOOP);
+  // Evaluate left and right sides
+  ast_ *left_val = interpreter_process(interpreter, node->left);
+  ast_ *right_val = interpreter_process(interpreter, node->right);
+
+  // Ensure both values are not null before proceeding
+  if ((left_val->type == AST_INTEGER && left_val->int_value.null == 1) ||
+      (right_val->type == AST_INTEGER && right_val->int_value.null == 1) ||
+      (left_val->type == AST_REAL && left_val->real_value.null == 1) ||
+      (right_val->type == AST_REAL && right_val->real_value.null == 1) ||
+      (left_val->type == AST_CHARACTER && left_val->char_value.null == 1) ||
+      (right_val->type == AST_CHARACTER && right_val->char_value.null == 1) ||
+      (left_val->type == AST_STRING && left_val->string_value == NULL) ||
+      (right_val->type == AST_STRING && right_val->string_value == NULL))
+  {
+    printf("Error: Null value in boolean expression\n");
+    exit(1);
+  }
+
+  ast_ *result = init_ast(AST_BOOLEAN);
+
+  // Ensure both sides are of comparable types (int, real, char, string)
+  if (left_val->type != right_val->type)
+  {
+    printf("Error: Type mismatch in boolean expression\n");
+    exit(1);
+  }
+
+  // Handle comparisons for int and real
+  if (left_val->type == AST_INTEGER || left_val->type == AST_REAL)
+  {
+    double left_num = (left_val->type == AST_INTEGER) ? left_val->int_value.value : left_val->real_value.value;
+    double right_num = (right_val->type == AST_INTEGER) ? right_val->int_value.value : right_val->real_value.value;
+
+    if (strcmp(node->op, "<") == 0)
+      result->boolean_value.value = left_num < right_num;
+    else if (strcmp(node->op, ">") == 0)
+      result->boolean_value.value = left_num > right_num;
+    else if (strcmp(node->op, "<=") == 0)
+      result->boolean_value.value = left_num <= right_num;
+    else if (strcmp(node->op, ">=") == 0)
+      result->boolean_value.value = left_num >= right_num;
+    else if (strcmp(node->op, "=") == 0)
+      result->boolean_value.value = left_num == right_num;
+    else if (strcmp(node->op, "!=") == 0)
+      result->boolean_value.value = left_num != right_num;
+    else
+    {
+      printf("Invalid boolean operation: %s\n", node->op);
+      exit(1);
+    }
+  }
+  // Handle comparisons for char (based on ASCII values)
+  else if (left_val->type == AST_CHARACTER)
+  {
+    char left_char = left_val->char_value.value;
+    char right_char = right_val->char_value.value;
+
+    if (strcmp(node->op, "<") == 0)
+      result->boolean_value.value = left_char < right_char;
+    else if (strcmp(node->op, ">") == 0)
+      result->boolean_value.value = left_char > right_char;
+    else if (strcmp(node->op, "<=") == 0)
+      result->boolean_value.value = left_char <= right_char;
+    else if (strcmp(node->op, ">=") == 0)
+      result->boolean_value.value = left_char >= right_char;
+    else if (strcmp(node->op, "=") == 0)
+      result->boolean_value.value = left_char == right_char;
+    else if (strcmp(node->op, "!=") == 0)
+      result->boolean_value.value = left_char != right_char;
+    else
+    {
+      printf("Invalid boolean operation: %s\n", node->op);
+      exit(1);
+    }
+  }
+  // Handle comparisons for strings (lexicographical comparison)
+  else if (left_val->type == AST_STRING)
+  {
+    int cmp_result = strcmp(left_val->string_value, right_val->string_value);
+
+    if (strcmp(node->op, "<") == 0)
+      result->boolean_value.value = cmp_result < 0;
+    else if (strcmp(node->op, ">") == 0)
+      result->boolean_value.value = cmp_result > 0;
+    else if (strcmp(node->op, "<=") == 0)
+      result->boolean_value.value = cmp_result <= 0;
+    else if (strcmp(node->op, ">=") == 0)
+      result->boolean_value.value = cmp_result >= 0;
+    else if (strcmp(node->op, "=") == 0)
+      result->boolean_value.value = cmp_result == 0;
+    else if (strcmp(node->op, "!=") == 0)
+      result->boolean_value.value = cmp_result != 0;
+    else
+    {
+      printf("Invalid boolean operation: %s\n", node->op);
+      exit(1);
+    }
+  }
+  else
+  {
+    printf("Error: Unsupported type for boolean comparison\n");
+    exit(1);
+  }
+
+  result->boolean_value.null = 0;
+  return result;
 }
+
 ast_ *interpreter_process_record(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> record <<\n");
@@ -435,23 +603,38 @@ ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node)
     switch (expr->type)
     {
     case AST_STRING:
-      printf("%s", expr->string_value);
+      if (expr->string_value != NULL)
+      {
+        printf("%s", expr->string_value);
+      }
       break;
 
     case AST_INTEGER:
-      printf("%d", expr->int_value);
+      if (expr->int_value.null == 0)
+      {
+        printf("%d", expr->int_value.value);
+      }
       break;
 
     case AST_REAL:
-      printf("%0.2f", expr->real_value);
+      if (expr->real_value.null == 0)
+      {
+        printf("%0.2f", expr->real_value.value);
+      }
       break;
 
     case AST_CHARACTER:
-      printf("%c", expr->char_value);
+      if (expr->char_value.null == 0)
+      {
+        printf("%c", expr->char_value.value);
+      }
       break;
 
     case AST_BOOLEAN:
-      printf("%s", expr->boolean_value ? "True" : "False");
+      if (expr->boolean_value.null == 0)
+      {
+        printf("%s", expr->boolean_value.value ? "True" : "False");
+      }
       break;
 
     default:
