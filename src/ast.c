@@ -40,6 +40,7 @@ ast_ *init_ast(enum ast_type type)
 
   case AST_ARRAY:
     ast->array_elements = NULL;
+    ast->array_size = 0;
     break;
 
   case AST_ASSIGNMENT:
@@ -64,6 +65,7 @@ ast_ *init_ast(enum ast_type type)
   case AST_INSTANTIATION:
     ast->class_name = NULL;
     ast->arguments = NULL;
+    ast->arguments_count = 0;
     break;
 
   case AST_ARITHMETIC_EXPRESSION:
@@ -76,11 +78,13 @@ ast_ *init_ast(enum ast_type type)
   case AST_RECORD:
     ast->record_name = NULL;
     ast->record_elements = NULL;
+    ast->field_count = 0;
     break;
 
   case AST_SUBROUTINE:
     ast->subroutine_name = NULL;
     ast->parameters = NULL;
+    ast->parameter_count = 0;
     ast->body = NULL;
     break;
 
@@ -375,6 +379,8 @@ void print_ast_literal(ast_ *node, int indent)
       print_ast(node->array_elements[i], indent + 1);
       i++;
     }
+    print_indent(indent);
+    printf("Array size: %d\n", node->array_size);
     break;
   default:
     break;
@@ -486,6 +492,8 @@ void print_ast(ast_ *node, int indent)
       print_ast(node->arguments[c], indent + 1);
       c++;
     }
+    print_indent(indent);
+    printf("Number of arguments: %d\n", node->arguments_count);
     break;
   case AST_ARITHMETIC_EXPRESSION:
   case AST_BOOLEAN_EXPRESSION:
@@ -524,6 +532,8 @@ void print_ast(ast_ *node, int indent)
       printf("Dimension: %d\n", node->record_elements[d]->dimension);
       d++;
     }
+    print_indent(indent);
+    printf("Number of elements: %d\n", node->field_count);
     break;
   case AST_SUBROUTINE:
     if (node->subroutine_name)
@@ -539,6 +549,8 @@ void print_ast(ast_ *node, int indent)
       print_ast(node->parameters[e], indent + 1);
       e++;
     }
+    print_indent(indent);
+    printf("Number of parameters: %d\n", node->parameter_count);
     print_indent(indent);
     printf("Body:\n");
     int f = 0;

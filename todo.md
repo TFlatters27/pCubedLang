@@ -1,5 +1,13 @@
 # Todo List
 
+## Thoughts
+
+- [ ] Implement BODMAS (operation precedence) for arithmetic expressions
+- [ ] Allow USERINPUT to be parsed as an expression rather than a string
+- [ ] Add EXIT keyword for programatic use and also REPL mode
+- [ ] Add multi nesting of records
+- [ ] Add default values in record fields
+
 ## Comments
 
 - [x] Single line comments
@@ -12,8 +20,8 @@
 
 ## Arithmetic Operations
 
-- [ ] Implement addition (`+`), subtraction(`-`), multiplication(`*`), division(`/`), power(`^`)
-- [ ] Implement integer modulus(`MOD`) and division (`DIV`)
+- [x] Implement addition (`+`), subtraction(`-`), multiplication(`*`), division(`/`), power(`^`)
+- [x] Implement integer modulus(`MOD`) and division (`DIV`)
 
 ## Relational Operations
 
@@ -53,9 +61,9 @@
 
 ## Arrays
 
-- [ ] Array assignment
-- [ ] Array access
-- [ ] Multi dimensional arrays
+- [x] Array assignment
+- [x] Array access
+- [x] Multi dimensional arrays
 - [ ] For-in iteration over arrays
 
 ## Records

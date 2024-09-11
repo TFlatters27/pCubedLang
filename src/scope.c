@@ -121,7 +121,7 @@ ast_ *scope_get_variable_definition(scope_ *scope, const char *vname)
   {
     if (strcmp(scope->variable_definitions[i]->lhs->variable_name, vname) == 0)
     {
-      return scope->variable_definitions[i];
+      return scope->variable_definitions[i]->rhs;
     }
   }
 

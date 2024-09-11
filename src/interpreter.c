@@ -1,7 +1,76 @@
 #include "include/interpreter.h"
 #include "include/scope.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+ast_ *concatenate(ast_ *left_val, ast_ *right_val)
+{
+  char *result = NULL;
+
+  // Handle character + character
+  if (left_val->type == AST_CHARACTER && right_val->type == AST_CHARACTER)
+  {
+    result = (char *)malloc(3); // 2 chars + null terminator
+    if (result == NULL)
+    {
+      perror("Failed to allocate memory for char concatenation");
+      exit(1);
+    }
+    result[0] = left_val->char_value;
+    result[1] = right_val->char_value;
+    result[2] = '\0';
+  }
+  // Handle string + character
+  else if (left_val->type == AST_STRING && right_val->type == AST_CHARACTER)
+  {
+    result = (char *)malloc(strlen(left_val->string_value) + 2); // 1 char + null terminator
+    if (result == NULL)
+    {
+      perror("Failed to allocate memory for string-char concatenation");
+      exit(1);
+    }
+    strcpy(result, left_val->string_value);
+    result[strlen(left_val->string_value)] = right_val->char_value;
+    result[strlen(left_val->string_value) + 1] = '\0';
+  }
+  // Handle character + string
+  else if (left_val->type == AST_CHARACTER && right_val->type == AST_STRING)
+  {
+    result = (char *)malloc(2 + strlen(right_val->string_value)); // 1 char + string + null terminator
+    if (result == NULL)
+    {
+      perror("Failed to allocate memory for char-string concatenation");
+      exit(1);
+    }
+    result[0] = left_val->char_value;
+    strcpy(&result[1], right_val->string_value);
+  }
+  // Handle string + string
+  else if (left_val->type == AST_STRING && right_val->type == AST_STRING)
+  {
+    result = (char *)malloc(strlen(left_val->string_value) + strlen(right_val->string_value) + 1);
+    if (result == NULL)
+    {
+      perror("Failed to allocate memory for string-string concatenation");
+      exit(1);
+    }
+    strcpy(result, left_val->string_value);
+    strcat(result, right_val->string_value);
+  }
+  // Invalid types for concatenation
+  else
+  {
+    perror("Concatenation error: Unsupported types");
+    exit(1);
+  }
+
+  // Create a new AST node for the concatenated result
+  ast_ *new_node = init_ast(AST_STRING);
+  new_node->string_value = result;
+
+  return new_node;
+}
 
 interpreter_ *init_interpreter()
 {
@@ -67,7 +136,7 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_compound(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> compound <<\n");
+  // printf(">> compound <<\n");
   int i = 0;
   while (node->compound_value[i] != NULL)
   {
@@ -104,18 +173,11 @@ ast_ *interpreter_process_boolean(interpreter_ *interpreter, ast_ *node)
 }
 ast_ *interpreter_process_array(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> array <<\n");
-  // Process each element in the array
-  for (size_t i = 0; node->array_elements[i] != NULL; i++)
-  {
-    interpreter_process(interpreter, node->array_elements[i]);
-  }
-
-  return node; // Return the processed array node
+  return node;
 }
 ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> assignment <<\n");
+  // printf(">> assignment <<\n");
 
   // Process right-hand side before storing in scope
   ast_ *rhs_value = interpreter_process(interpreter, node->rhs);
@@ -129,7 +191,7 @@ ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> variable <<\n");
+  // printf(">> variable <<\n");
 
   // Fetch variable definition from scope
   ast_ *vdef = scope_get_variable_definition(node->scope, node->variable_name);
@@ -137,7 +199,7 @@ ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node)
   if (vdef != NULL)
   {
     // Process and return the left-hand side (i.e., the variable's value)
-    return interpreter_process(interpreter, vdef->rhs);
+    return interpreter_process(interpreter, vdef);
   }
 
   // If the variable is undefined
@@ -154,25 +216,50 @@ ast_ *interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> array_access <<\n");
+  // Retrieve the array from the current scope
+  ast_ *array = scope_get_variable_definition(node->scope, node->variable_name);
 
-  // Fetch the array
-  ast_ *array = interpreter_process_variable(interpreter, node->lhs);
-
-  // Evaluate the index
-  ast_ *index_ast = interpreter_process(interpreter, node->index);
-
-  // Assuming the index is an integer
-  int index = index_ast->int_value;
-
-  if (array->array_elements[index] != NULL)
+  if (!array)
   {
-    return array->array_elements[index];
+    fprintf(stderr, "Error: could not fetch array from scope\n");
+    return init_ast(AST_NOOP);
   }
 
-  printf("Index `%d` out of bounds for array.\n", index);
-  exit(1);
-  return init_ast(AST_NOOP);
+  if (array->type != AST_ARRAY)
+  {
+    fprintf(stderr, "Error: %s is not defined as an array.\n", node->variable_name);
+    return init_ast(AST_NOOP);
+  }
+
+  ast_ *current_array = array;
+  int b = 0;
+
+  // Iterate over the indices to access nested arrays
+  while (node->index[b] != NULL)
+  {
+    ast_ *index_value = interpreter_process(interpreter, node->index[b]);
+
+    if (index_value->type != AST_INTEGER)
+    {
+      printf("Error: Array index must be an integer.\n");
+      return init_ast(AST_NOOP);
+    }
+
+    int index = index_value->int_value;
+
+    // Ensure that current_array is an array and the index is within bounds
+    if (current_array->type != AST_ARRAY || index < 0 || index >= current_array->array_size)
+    {
+      printf("Error: Array index out of bounds or invalid array access.\n");
+      return init_ast(AST_NOOP);
+    }
+
+    // Move to the next nested array or value
+    current_array = current_array->array_elements[index];
+    b++;
+  }
+
+  return current_array;
 }
 
 ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
@@ -182,9 +269,129 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
 }
 ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> arithmetic_expression <<\n");
-  return init_ast(AST_NOOP);
+  // printf(">> arithmetic_expression <<\n");
+
+  ast_ *left_val = NULL;
+  ast_ *right_val = NULL;
+
+  // Process the left side, if not null
+  if (node->left != NULL)
+  {
+    left_val = interpreter_process(interpreter, node->left);
+  }
+
+  // Process the right side, which should always exist
+  right_val = interpreter_process(interpreter, node->right);
+
+  // Handle unary minus operation
+  if ((strcmp(node->op, "-") == 0) && node->left == NULL)
+  {
+    if (right_val->type == AST_INTEGER)
+    {
+      right_val->int_value = -(right_val->int_value);
+      return right_val;
+    }
+    else if (right_val->type == AST_REAL)
+    {
+      right_val->real_value = -(right_val->real_value);
+      return right_val;
+    }
+  }
+
+  // Handle binary operations
+  if (strcmp(node->op, "+") == 0)
+  {
+    if ((left_val->type == AST_CHARACTER || left_val->type == AST_STRING) &&
+        (right_val->type == AST_CHARACTER || right_val->type == AST_STRING))
+    {
+      return concatenate(left_val, right_val); // General concatenation for char/string
+    }
+
+    else if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    {
+      left_val->int_value += right_val->int_value;
+      return left_val;
+    }
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    {
+      left_val->real_value += right_val->real_value;
+      return left_val;
+    }
+  }
+  else if (strcmp(node->op, "-") == 0)
+  {
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    {
+      left_val->int_value -= right_val->int_value;
+      return left_val;
+    }
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    {
+      left_val->real_value -= right_val->real_value;
+      return left_val;
+    }
+  }
+  else if (strcmp(node->op, "*") == 0)
+  {
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    {
+      left_val->int_value *= right_val->int_value;
+      return left_val;
+    }
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    {
+      left_val->real_value *= right_val->real_value;
+      return left_val;
+    }
+  }
+  else if (strcmp(node->op, "/") == 0)
+  {
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    {
+      left_val->int_value /= right_val->int_value;
+      return left_val;
+    }
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    {
+      left_val->real_value /= right_val->real_value;
+      return left_val;
+    }
+  }
+  else if (strcmp(node->op, "^") == 0)
+  {
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    {
+      left_val->int_value = pow(left_val->int_value, right_val->int_value);
+      return left_val;
+    }
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    {
+      left_val->real_value = pow(left_val->real_value, right_val->real_value);
+      return left_val;
+    }
+  }
+  else if (strcmp(node->op, "DIV") == 0)
+  {
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    {
+      left_val->int_value /= right_val->int_value; // Integer division
+      return left_val;
+    }
+  }
+  else if (strcmp(node->op, "MOD") == 0)
+  {
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    {
+      left_val->int_value %= right_val->int_value;
+      return left_val;
+    }
+  }
+
+  printf("Invalid arithmetic operation: %s\n", node->op);
+  exit(1);
+  return init_ast(AST_NOOP); // Return a no-op if no valid operation found
 }
+
 ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> boolean_expression <<\n");
@@ -268,11 +475,6 @@ ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node)
 ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> definite_loop <<\n");
-
-  for (int i = node->start_expr->int_value; i <= node->end_expr->int_value; i++)
-  {
-    interpreter_process(interpreter, node->loop_body);
-  }
 
   return init_ast(AST_NOOP);
 }

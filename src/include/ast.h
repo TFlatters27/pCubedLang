@@ -57,6 +57,7 @@ typedef struct AST_STRUCT
     int boolean_value;                  // Boolean value (if this node is a boolean literal)
     char *string_value;                 // String value (if this node is a string literal)
     struct AST_STRUCT **array_elements; // List of elements (if this node is an array literal)
+    int array_size;                     // Number of elements (if this node is an array literal
 
     /* AST_ASSIGNMENT */
     struct AST_STRUCT *lhs; // Left-hand side value to assign (variable or record access)
@@ -76,6 +77,7 @@ typedef struct AST_STRUCT
     /* AST_INSTANTIATION */
     char *class_name;              // Name of the class
     struct AST_STRUCT **arguments; // List of arguments (for function calls/instantiations)
+    int arguments_count; // Number of arguments
 
     /* AST_EXPRESSION */
     struct AST_STRUCT *left;  // Left operand (if this node is a binary operation)
@@ -85,10 +87,12 @@ typedef struct AST_STRUCT
     /* AST_RECORD */
     char *record_name;                     // Name of the record (e.g., "Student")
     ast_record_element_ **record_elements; // List of element declarations (e.g., fields like "name", "age")
+    int field_count; // Number of fields in the record
 
     /* AST_SUBROUTINE */
     char *subroutine_name;          // Name of the subroutine
     struct AST_STRUCT **parameters; // List of parameters (AST_VARIABLE nodes)
+    int parameter_count; // Number of parameters in the subroutine
     struct AST_STRUCT **body;       // Body of the subroutine (List of AST nodes)
 
     /* AST_RETURN */

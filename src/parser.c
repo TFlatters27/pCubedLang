@@ -111,54 +111,6 @@ ast_ *parser_parse_id(parser_ *parser, scope_ *scope)
   return handle_id(parser, scope);
 }
 
-// Helper function to handle unary expressions like "-" and "NOT"
-ast_ *parse_unary_expression(parser_ *parser, scope_ *scope)
-{
-  ast_ *expression = NULL;
-
-  // Handling unary minus
-  if (parser->current_token->type == TOKEN_ARITH_OP && strcmp(parser->current_token->value, "-") == 0)
-  {
-    parser_expect(parser, TOKEN_ARITH_OP); // Consume the unary minus
-    ast_ *right_expression = parse_expression(parser, scope);
-
-    // Check for integer, real, or ID types
-    if (right_expression->type != AST_INTEGER && right_expression->type != AST_REAL && right_expression->type != AST_VARIABLE)
-    {
-      fprintf(stderr, "Type error: Unary minus can only be applied to INT, REAL, or ID\n");
-      exit(1);
-    }
-
-    expression = init_ast(AST_ARITHMETIC_EXPRESSION);
-    expression->op = strdup("-");
-    expression->right = right_expression;
-    expression->scope = scope;
-    return expression;
-  }
-
-  // Handling NOT operator
-  if (parser->current_token->type == TOKEN_BOOL_OP && strcmp(parser->current_token->value, "NOT") == 0)
-  {
-    parser_expect(parser, TOKEN_BOOL_OP); // Consume the NOT operator
-    ast_ *right_expression = parse_expression(parser, scope);
-
-    // Check for boolean expressions or IDs
-    if (right_expression->type != AST_BOOLEAN_EXPRESSION && right_expression->type != AST_VARIABLE)
-    {
-      fprintf(stderr, "Type error: NOT can only be applied to BOOLEAN expressions or ID\n");
-      exit(1);
-    }
-
-    expression = init_ast(AST_BOOLEAN_EXPRESSION);
-    expression->op = strdup("NOT");
-    expression->right = right_expression;
-    expression->scope = scope;
-    return expression;
-  }
-
-  return expression;
-}
-
 // Helper function to handle variables, array access, and record access
 ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
 {
@@ -212,6 +164,7 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
       {
         ast_ *arg = parse_expression(parser, scope);
         add_ast_to_list(&(expression->arguments), arg);
+        expression->arguments_count++;
         if (parser->current_token->type == TOKEN_COMMA)
         {
           parser_expect(parser, TOKEN_COMMA); // Consume ','
@@ -236,46 +189,6 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
   return expression;
 }
 
-// Helper function to handle literals like integers, reals, characters, booleans, and strings
-ast_ *parse_literal(parser_ *parser, scope_ *scope)
-{
-  ast_ *expression = NULL;
-
-  if (parser->current_token->type == TOKEN_INT)
-  {
-    expression = init_ast(AST_INTEGER);
-    expression->int_value = atoi(parser->current_token->value);
-    parser_expect(parser, TOKEN_INT);
-  }
-  else if (parser->current_token->type == TOKEN_REAL)
-  {
-    expression = init_ast(AST_REAL);
-    expression->real_value = atof(parser->current_token->value);
-    parser_expect(parser, TOKEN_REAL);
-  }
-  else if (parser->current_token->type == TOKEN_CHAR)
-  {
-    expression = init_ast(AST_CHARACTER);
-    expression->char_value = parser->current_token->value[0];
-    parser_expect(parser, TOKEN_CHAR);
-  }
-  else if (parser->current_token->type == TOKEN_BOOL)
-  {
-    expression = init_ast(AST_BOOLEAN);
-    expression->boolean_value = strcmp(parser->current_token->value, "True") == 0;
-    parser_expect(parser, TOKEN_BOOL);
-  }
-  else if (parser->current_token->type == TOKEN_STRING)
-  {
-    expression = init_ast(AST_STRING);
-    expression->string_value = strdup(parser->current_token->value);
-    parser_expect(parser, TOKEN_STRING);
-  }
-  expression->scope = scope;
-  return expression;
-}
-
-// Helper function to parse arrays
 ast_ *parse_array(parser_ *parser, scope_ *scope)
 {
   ast_ *expression = init_ast(AST_ARRAY);
@@ -287,7 +200,7 @@ ast_ *parse_array(parser_ *parser, scope_ *scope)
   {
     ast_ *element = parse_expression(parser, scope);         // Parse each element
     add_ast_to_list(&(expression->array_elements), element); // Add element to the array
-
+    expression->array_size++;
     if (parser->current_token->type == TOKEN_COMMA)
     {
       parser_expect(parser, TOKEN_COMMA); // Consume ','
@@ -298,9 +211,78 @@ ast_ *parse_array(parser_ *parser, scope_ *scope)
   expression->scope = scope;
   return expression;
 }
+
+// Helper function to handle literals like integers, reals, characters, booleans, and strings
+ast_ *parse_literal(parser_ *parser, scope_ *scope)
+{
+  ast_ *expression = NULL;
+
+  if (parser->current_token->type == TOKEN_INT)
+  {
+    expression = init_ast(AST_INTEGER);
+    expression->int_value = atoi(parser->current_token->value);
+    expression->scope = scope;
+    parser_expect(parser, TOKEN_INT);
+  }
+  else if (parser->current_token->type == TOKEN_REAL)
+  {
+    expression = init_ast(AST_REAL);
+    expression->real_value = atof(parser->current_token->value);
+    expression->scope = scope;
+    parser_expect(parser, TOKEN_REAL);
+  }
+  else if (parser->current_token->type == TOKEN_CHAR)
+  {
+    expression = init_ast(AST_CHARACTER);
+    expression->char_value = parser->current_token->value[0];
+    expression->scope = scope;
+    parser_expect(parser, TOKEN_CHAR);
+  }
+  else if (parser->current_token->type == TOKEN_BOOL)
+  {
+    expression = init_ast(AST_BOOLEAN);
+    expression->boolean_value = strcmp(parser->current_token->value, "True") == 0;
+    expression->scope = scope;
+    parser_expect(parser, TOKEN_BOOL);
+  }
+  else if (parser->current_token->type == TOKEN_STRING)
+  {
+    expression = init_ast(AST_STRING);
+    expression->string_value = strdup(parser->current_token->value);
+    expression->scope = scope;
+    parser_expect(parser, TOKEN_STRING);
+  }
+  else if (parser->current_token->type == TOKEN_LBRACKET)
+  {
+    expression = parse_array(parser, scope);
+  }
+  return expression;
+}
+
 // Helper function to handle arithmetic operations
 ast_ *parse_arithmetic_operation(parser_ *parser, ast_ *left, scope_ *scope)
 {
+  // Check if we're dealing with a unary operator
+  if (!left && parser->current_token->type == TOKEN_ARITH_OP && strcmp(parser->current_token->value, "-") == 0)
+  {
+    parser_expect(parser, TOKEN_ARITH_OP); // Consume the unary minus
+    ast_ *right_expression = parse_expression(parser, scope);
+
+    // Ensure it's an acceptable type for unary minus
+    if (right_expression->type != AST_INTEGER && right_expression->type != AST_REAL && right_expression->type != AST_VARIABLE)
+    {
+      fprintf(stderr, "Type error: Unary minus can only be applied to INT, REAL, or ID\n");
+      exit(1);
+    }
+
+    ast_ *unary_expression = init_ast(AST_ARITHMETIC_EXPRESSION);
+    unary_expression->op = strdup("-");
+    unary_expression->right = right_expression;
+    unary_expression->scope = scope;
+    return unary_expression;
+  }
+
+  // Handle binary arithmetic operation
   ast_ *arith_op = init_ast(AST_ARITHMETIC_EXPRESSION);
   arith_op->op = strdup(parser->current_token->value);
   parser_expect(parser, TOKEN_ARITH_OP); // Consume the operator
@@ -343,6 +325,27 @@ ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
 // Helper function to handle boolean operations
 ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
 {
+  // Check if it's a unary NOT operation
+  if (!left && parser->current_token->type == TOKEN_BOOL_OP && strcmp(parser->current_token->value, "NOT") == 0)
+  {
+    parser_expect(parser, TOKEN_BOOL_OP); // Consume the NOT operator
+    ast_ *right_expression = parse_expression(parser, scope);
+
+    // Ensure it's an acceptable type for unary NOT
+    if (right_expression->type != AST_BOOLEAN_EXPRESSION && right_expression->type != AST_VARIABLE)
+    {
+      fprintf(stderr, "Type error: NOT can only be applied to BOOLEAN expressions or ID\n");
+      exit(1);
+    }
+
+    ast_ *unary_expression = init_ast(AST_BOOLEAN_EXPRESSION);
+    unary_expression->op = strdup("NOT");
+    unary_expression->right = right_expression;
+    unary_expression->scope = scope;
+    return unary_expression;
+  }
+
+  // Handle binary boolean operation
   ast_ *bool_op = init_ast(AST_BOOLEAN_EXPRESSION);
   bool_op->op = strdup(parser->current_token->value);
   parser_expect(parser, TOKEN_BOOL_OP); // Consume the operator
@@ -754,6 +757,7 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
 
     // Add the record element to the record's list
     add_ast_to_list((ast_ ***)&record_ast->record_elements, (ast_ *)record_element);
+    record_ast->field_count++;
     parser_expect(parser, TOKEN_NEWLINE);
   }
 
@@ -784,6 +788,7 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
       ast_ *param = init_ast(AST_VARIABLE);
       param->variable_name = parser->current_token->value;
       add_ast_to_list(&(subroutine_ast->parameters), param);
+      subroutine_ast->parameter_count++;
       parser_expect(parser, TOKEN_ID); // Consume the parameter name
 
       if (parser->current_token->type == TOKEN_COMMA)
