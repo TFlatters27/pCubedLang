@@ -1,0 +1,27 @@
+RECORD Car
+  make : String | "undefined"
+  model : String | "undefined"
+  reg : String | "undefined"
+  price : Real | "1000"
+  noOfDoors : Integer | 5
+ENDRECORD
+
+myCar <- Car('Ford', 'Focus', 'DX17 GYT', 1399.99, 5)
+
+{
+  make: 'Ford',
+  model: 'Focus',
+  reg: 'DX17 GYT',
+  price: 1399.99,
+  noOfDoors: 5
+}
+
+myVan <- Car(make: 'Mazda', reg: 'MJ67 KYU', noOfDoors: 3)
+
+{
+  make: 'Mazda',
+  model: 'undefined',
+  reg: 'MJ67 KYU',
+  price: 1000.00,
+  noOfDoors: 3
+}

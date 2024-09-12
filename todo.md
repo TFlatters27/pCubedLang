@@ -7,6 +7,7 @@
 - [ ] Add EXIT keyword for programatic use and also REPL mode
 - [ ] Add multi nesting of records
 - [ ] Add default values in record fields
+- [x] Printing of arrays and records
 
 ## Comments
 
@@ -68,7 +69,7 @@
 
 ## Records
 
-- [ ] Declaration of records
+- [x] Declaration of records
 - [ ] Instantiation of records
 - [ ] Record field access
 

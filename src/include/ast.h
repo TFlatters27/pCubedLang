@@ -15,16 +15,18 @@ enum ast_type
     AST_STRING,    // For string literals
     AST_BOOLEAN,   // For boolean literals
     AST_ARRAY,     // For array literals
+    AST_RECORD,    // For record literals
+
 
     AST_ASSIGNMENT,    // For variable assignments
     AST_VARIABLE,      // For variable references
-    AST_RECORD_ACCESS, // For accessing a field in a record
+    AST_RECORD_DEFINITION_ACCESS, // For accessing a field in a record
     AST_ARRAY_ACCESS,  // For accessing an array element
     AST_INSTANTIATION, // For object instantiation or function calls
     AST_ARITHMETIC_EXPRESSION,
     AST_BOOLEAN_EXPRESSION,
 
-    AST_RECORD,          // For record creation
+    AST_RECORD_DEFINITION, // For record creation
     AST_SUBROUTINE,      // For subroutine definitions
     AST_RETURN,          // For RETURN statements in subroutines
     AST_OUTPUT,          // For OUTPUT statements
@@ -34,10 +36,10 @@ enum ast_type
 };
 
 // Structure representing an element (field) in a record.
-typedef struct AST_RECORD_ELEMENT_STRUCT
+typedef struct AST_RECORD_DEFINITION_ELEMENT_STRUCT
 {
     char *element_name;      // Name of the element (e.g., "name", "age")
-    struct AST_STRUCT *type; // Type of the element (e.g., AST_STRING, AST_ARRAY)
+    struct AST_STRUCT *element; // AST of the element (e.g., AST_STRING, AST_ARRAY)
     int dimension;           // Dimension of the element (e.g., [] or [[]])
 } ast_record_element_;
 
@@ -94,7 +96,7 @@ typedef struct AST_STRUCT
     /* AST_VARIABLE */
     char *variable_name; // Name of the variable (if this node is a variable reference)
 
-    /* AST_RECORD_ACCESS */
+    /* AST_RECORD_DEFINITION_ACCESS */
     char *field_name; // The field being accessed (e.g., "passed")
 
     /* AST_ARRAY_ACCESS */
@@ -110,7 +112,7 @@ typedef struct AST_STRUCT
     struct AST_STRUCT *right; // Right operand (if this node is a binary operation)
     char *op;                 // Operator as a string (e.g., "+", "-", "*", "DIV", "MOD")
 
-    /* AST_RECORD */
+    /* AST_RECORD_DEFINITION */
     char *record_name;                     // Name of the record (e.g., "Student")
     ast_record_element_ **record_elements; // List of element declarations (e.g., fields like "name", "age")
     int field_count;                       // Number of fields in the record

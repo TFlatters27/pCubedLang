@@ -105,6 +105,82 @@ ast_ *concatenate(ast_ *left_val, ast_ *right_val)
   return new_node;
 }
 
+void interpreter_output_literal(ast_ *expr, interpreter_ *interpreter)
+{
+
+  switch (expr->type)
+  {
+  case AST_STRING:
+    if (expr->string_value != NULL)
+    {
+      printf("%s", expr->string_value);
+    }
+    break;
+
+  case AST_INTEGER:
+    if (expr->int_value.null == 0)
+    {
+      printf("%d", expr->int_value.value);
+    }
+    break;
+
+  case AST_REAL:
+    if (expr->real_value.null == 0)
+    {
+      printf("%0.2f", expr->real_value.value);
+    }
+    break;
+
+  case AST_CHARACTER:
+    if (expr->char_value.null == 0)
+    {
+      printf("%c", expr->char_value.value);
+    }
+    break;
+
+  case AST_BOOLEAN:
+    if (expr->boolean_value.null == 0)
+    {
+      printf("%s", expr->boolean_value.value ? "True" : "False");
+    }
+    break;
+
+  case AST_ARRAY:
+    if (expr->array_elements != NULL && expr->array_size != 0)
+    {
+      printf("[");
+      for (size_t j = 0; j < expr->array_size; j++)
+      {
+        interpreter_output_literal(expr->array_elements[j], interpreter);
+        if (j < expr->array_size - 1)
+        {
+          printf(", ");
+        }
+      }
+      printf("]");
+    }
+    break;
+
+  case AST_RECORD:
+    if (expr->record_name != NULL && expr->record_elements != NULL)
+    {
+      printf("%s {\n", expr->record_name);
+      for (size_t k = 0; k < expr->field_count; k++)
+      {
+        printf("  %s: ", expr->record_elements[k]->element_name);
+        interpreter_output_literal(expr->record_elements[k]->element, interpreter);
+        printf("\n");
+      }
+      printf("}");
+    }
+    break;
+
+  default:
+    fprintf(stderr, "Unsupported output type in AST_OUTPUT.\n");
+    exit(1);
+  }
+}
+
 interpreter_ *init_interpreter()
 {
   interpreter_ *interpreter = calloc(1, sizeof(struct INTERPRETER_STRUCT));
@@ -117,25 +193,25 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
   {
   case AST_COMPOUND:
     return interpreter_process_compound(interpreter, node);
-  case AST_NOOP:
-    return node;
   case AST_INTEGER:
-    return interpreter_process_integer(interpreter, node);
+    return node;
   case AST_REAL:
-    return interpreter_process_real(interpreter, node);
+    return node;
   case AST_CHARACTER:
-    return interpreter_process_character(interpreter, node);
+    return node;
   case AST_STRING:
-    return interpreter_process_string(interpreter, node);
+    return node;
   case AST_BOOLEAN:
-    return interpreter_process_boolean(interpreter, node);
+    return node;
   case AST_ARRAY:
-    return interpreter_process_array(interpreter, node);
+    return node;
+  case AST_RECORD:
+    return node;
   case AST_ASSIGNMENT:
     return interpreter_process_assignment(interpreter, node);
   case AST_VARIABLE:
     return interpreter_process_variable(interpreter, node);
-  case AST_RECORD_ACCESS:
+  case AST_RECORD_DEFINITION_ACCESS:
     return interpreter_process_record_access(interpreter, node);
   case AST_ARRAY_ACCESS:
     return interpreter_process_array_access(interpreter, node);
@@ -145,8 +221,8 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
     return interpreter_process_arithmetic_expression(interpreter, node);
   case AST_BOOLEAN_EXPRESSION:
     return interpreter_process_boolean_expression(interpreter, node);
-  case AST_RECORD:
-    return interpreter_process_record(interpreter, node);
+  case AST_RECORD_DEFINITION:
+    return interpreter_process_record_definition(interpreter, node);
   case AST_SUBROUTINE:
     return interpreter_process_subroutine(interpreter, node);
   case AST_RETURN:
@@ -169,49 +245,17 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_compound(interpreter_ *interpreter, ast_ *node)
 {
-  // printf(">> compound <<\n");
   int i = 0;
   while (node->compound_value[i] != NULL)
   {
-    // printf("%d\n", i);
     interpreter_process(interpreter, node->compound_value[i]);
     i++;
   }
   return init_ast(AST_NOOP);
 }
-ast_ *interpreter_process_noop(interpreter_ *interpreter, ast_ *node)
-{
-  printf(">> noop <<\n");
-  return init_ast(AST_NOOP);
-}
-ast_ *interpreter_process_integer(interpreter_ *interpreter, ast_ *node)
-{
-  return node;
-}
-ast_ *interpreter_process_real(interpreter_ *interpreter, ast_ *node)
-{
-  return node;
-}
-ast_ *interpreter_process_character(interpreter_ *interpreter, ast_ *node)
-{
-  return node;
-}
-ast_ *interpreter_process_string(interpreter_ *interpreter, ast_ *node)
-{
-  return node;
-}
-ast_ *interpreter_process_boolean(interpreter_ *interpreter, ast_ *node)
-{
-  return node;
-}
-ast_ *interpreter_process_array(interpreter_ *interpreter, ast_ *node)
-{
-  return node;
-}
+
 ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
 {
-  // printf(">> assignment <<\n");
-
   // Process right-hand side before storing in scope
   ast_ *rhs_value = interpreter_process(interpreter, node->rhs);
   node->rhs = rhs_value; // Update the right-hand side with the processed value
@@ -221,35 +265,26 @@ ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
 
   return node;
 }
-
 ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node)
 {
-  // printf(">> variable <<\n");
-
-  // Fetch variable definition from scope
   ast_ *vdef = scope_get_variable_definition(node->scope, node->variable_name);
 
   if (vdef != NULL)
   {
-    // Process and return the left-hand side (i.e., the variable's value)
     return interpreter_process(interpreter, vdef);
   }
 
-  // If the variable is undefined
   printf("Undefined variable `%s`\n", node->variable_name);
   exit(1);
-  return init_ast(AST_NOOP); // Return noop as fallback
+  return init_ast(AST_NOOP);
 }
-
 ast_ *interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> record_access <<\n");
-  return init_ast(AST_NOOP); // Return noop as fallback
+  return init_ast(AST_NOOP);
 }
-
 ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 {
-  // Retrieve the array from the current scope
   ast_ *array = scope_get_variable_definition(node->scope, node->variable_name);
 
   if (!array)
@@ -305,23 +340,116 @@ ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> instantiation <<\n");
-  return init_ast(AST_NOOP);
+
+  // Use scope_get_instantiation_definition to find the record definition
+  ast_ *inst_definition = scope_get_instantiation_definition(node->scope, node->class_name);
+
+  if (!inst_definition)
+  {
+    printf("Error: Record definition '%s' not found.\n", node->class_name);
+    return init_ast(AST_NOOP);
+  }
+
+  // Check if the number of arguments matches the number of fields in the record
+  if (node->arguments_count != inst_definition->field_count)
+  {
+    printf("Error: Mismatched number of arguments for record instantiation '%s'.\n", node->class_name);
+    return init_ast(AST_NOOP);
+  }
+
+  // Create a new AST_RECORD_DEFINITION node for the instantiated record
+  ast_ *new_record = init_ast(AST_RECORD_DEFINITION);
+  new_record->record_name = node->class_name;
+  new_record->record_elements = (ast_record_element_ **)init_ast_list();
+  new_record->field_count = 0;
+
+  printf("New instantiated record\n");
+
+  // Assign the values from the arguments to the corresponding fields
+  for (int i = 0; i < node->arguments_count; i++)
+  {
+    // Match the type of the argument with the record field type
+    if (node->arguments[i]->type == inst_definition->record_elements[i]->element->type)
+    {
+      printf("arg type : %s\n", ast_type_to_string(node->arguments[i]->type));
+      printf("record type : %s\n", ast_type_to_string(inst_definition->record_elements[i]->element->type));
+
+      // Allocate memory for the record element
+      ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
+      if (!record_element)
+      {
+        printf("Memory allocation error.\n");
+        exit(1);
+      }
+      // Set the element name from the instantiation definition
+      record_element->element_name = inst_definition->record_elements[i]->element_name;
+
+      // Initialize the value element based on the argument's type
+      ast_ *element = init_ast(node->arguments[i]->type);
+      switch (element->type)
+      {
+      case AST_INTEGER:
+        element->int_value = node->arguments[i]->int_value;
+        printf("Assigning integer %d to field %s\n", element->int_value.value, record_element->element_name);
+        break;
+      case AST_REAL:
+        element->real_value = node->arguments[i]->real_value;
+        printf("Assigning real %.2f to field %s\n", element->real_value.value, record_element->element_name);
+        break;
+      case AST_CHARACTER:
+        element->char_value = node->arguments[i]->char_value;
+        printf("Assigning character %c to field %s\n", element->char_value.value, record_element->element_name);
+        break;
+      case AST_STRING:
+        element->string_value = node->arguments[i]->string_value;
+        printf("Assigning string %s to field %s\n", element->string_value, record_element->element_name);
+        break;
+      case AST_BOOLEAN:
+        element->boolean_value = node->arguments[i]->boolean_value;
+        printf("Assigning boolean %d to field %s\n", element->boolean_value.value, record_element->element_name);
+        break;
+      case AST_ARRAY:
+        printf("Assigning array to field %s\n", record_element->element_name);
+        element->array_elements = node->arguments[i]->array_elements;
+        element->array_size = node->arguments[i]->array_size;
+        break;
+      default:
+        fprintf(stderr, "Error: Unsupported type for record instantiation.\n");
+        exit(1);
+      }
+
+      // Assign the element to the record element
+      record_element->element = element;
+      record_element->dimension = 0;
+
+      // Add the record element to the list of record elements
+      add_ast_to_list((ast_ ***)&new_record->record_elements, (ast_ *)record_element);
+      new_record->field_count++;
+
+      printf("Added to record {%s, %s}\n", record_element->element_name, ast_type_to_string(record_element->element->type));
+    }
+    else
+    {
+      printf("Error: Mismatched type for argument %d in record instantiation '%s'.\n", i, node->class_name);
+      return init_ast(AST_NOOP);
+    }
+  }
+
+  return new_record;
 }
+
 ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ *node)
 {
   ast_ *left_val = NULL;
   ast_ *right_val = NULL;
 
-  // Process the left side, if not null
   if (node->left != NULL)
   {
     left_val = interpreter_process(interpreter, node->left);
   }
 
-  // Process the right side, which should always exist
   right_val = interpreter_process(interpreter, node->right);
 
-  // Check for null values on both sides before performing operations
   if (left_val != NULL && left_val->int_value.null == 1)
   {
     perror("Left operand is null");
@@ -452,12 +580,10 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
 
   printf("Invalid arithmetic operation: %s\n", node->op);
   exit(1);
-  return init_ast(AST_NOOP); // Return a no-op if no valid operation found
+  return init_ast(AST_NOOP);
 }
-
 ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *node)
 {
-  // Evaluate left and right sides if applicable (AND/OR need both sides, NOT needs only one)
   ast_ *left_val = NULL;
   ast_ *right_val = NULL;
 
@@ -597,10 +723,10 @@ ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *no
   return result;
 }
 
-ast_ *interpreter_process_record(interpreter_ *interpreter, ast_ *node)
+ast_ *interpreter_process_record_definition(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> record <<\n");
-  scope_add_record_definition(
+  printf(">> record definition <<\n");
+  scope_add_instantiation_definition(
       node->scope,
       node);
 
@@ -609,7 +735,7 @@ ast_ *interpreter_process_record(interpreter_ *interpreter, ast_ *node)
 ast_ *interpreter_process_subroutine(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> subroutine <<\n");
-  scope_add_subroutine_definition(
+  scope_add_instantiation_definition(
       node->scope,
       node);
 
@@ -631,48 +757,7 @@ ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node)
   for (size_t i = 0; node->output_expressions[i] != NULL; i++)
   {
     ast_ *expr = interpreter_process(interpreter, node->output_expressions[i]);
-
-    switch (expr->type)
-    {
-    case AST_STRING:
-      if (expr->string_value != NULL)
-      {
-        printf("%s", expr->string_value);
-      }
-      break;
-
-    case AST_INTEGER:
-      if (expr->int_value.null == 0)
-      {
-        printf("%d", expr->int_value.value);
-      }
-      break;
-
-    case AST_REAL:
-      if (expr->real_value.null == 0)
-      {
-        printf("%0.2f", expr->real_value.value);
-      }
-      break;
-
-    case AST_CHARACTER:
-      if (expr->char_value.null == 0)
-      {
-        printf("%c", expr->char_value.value);
-      }
-      break;
-
-    case AST_BOOLEAN:
-      if (expr->boolean_value.null == 0)
-      {
-        printf("%s", expr->boolean_value.value ? "True" : "False");
-      }
-      break;
-
-    default:
-      fprintf(stderr, "Unsupported output type in AST_OUTPUT.\n");
-      exit(1);
-    }
+    interpreter_output_literal(expr, interpreter);
 
     // Print a space between expressions, but avoid trailing space after the last expression
     if (node->output_expressions[i + 1] != NULL)

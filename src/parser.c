@@ -69,6 +69,7 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
     {
       if (ast_statement->type != AST_NOOP)
       {
+        print_ast(ast_statement, 0);
         ast_statement->scope = scope;
         add_ast_to_list(&(compound->compound_value), ast_statement);
       }
@@ -90,7 +91,7 @@ ast_ *parser_parse_id(parser_ *parser, scope_ *scope)
       {"WHILE", handle_undefined_loop},
       {"FOR", handle_defined_loop},
       {"IF", handle_selection},
-      {"RECORD", handle_record},
+      {"RECORD", handle_record_defintion},
       {"SUBROUTINE", handle_subroutine},
       {"RETURN", handle_return},
       {"OUTPUT", handle_output},
@@ -144,7 +145,7 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
   // Handle record access
   else if (parser->current_token->type == TOKEN_FULLSTOP)
   {
-    expression = init_ast(AST_RECORD_ACCESS);
+    expression = init_ast(AST_RECORD_DEFINITION_ACCESS);
     parser_expect(parser, TOKEN_FULLSTOP); // Consume '.'
     expression->record_name = variable_name;
     expression->field_name = parser->current_token->value;
@@ -686,7 +687,7 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
   return selection_ast;
 }
 
-ast_ *handle_record(parser_ *parser, scope_ *scope)
+ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
 {
   // Expect and store the record's name
   parser_expect(parser, TOKEN_ID); // Consume 'RECORD'
@@ -694,7 +695,7 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
   parser_expect(parser, TOKEN_ID); // Consume the record name
 
   // Initialize the AST node for the record
-  ast_ *record_ast = init_ast(AST_RECORD);
+  ast_ *record_ast = init_ast(AST_RECORD_DEFINITION);
   record_ast->record_name = record_name;
 
   // Initialize the record elements list
@@ -756,7 +757,7 @@ ast_ *handle_record(parser_ *parser, scope_ *scope)
     // Create the record element AST node
     ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
     record_element->element_name = field_name;
-    record_element->type = field_type_ast;
+    record_element->element = field_type_ast;
     record_element->dimension = dimension; // Assign the dimension here
 
     // Add the record element to the record's list

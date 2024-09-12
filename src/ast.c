@@ -122,12 +122,14 @@ const char *ast_type_to_string(enum ast_type type)
     return "AST_BOOLEAN";
   case AST_ARRAY:
     return "AST_ARRAY";
+  case AST_RECORD:
+    return "AST_RECORD";
   case AST_ASSIGNMENT:
     return "AST_ASSIGNMENT";
   case AST_VARIABLE:
     return "AST_VARIABLE";
-  case AST_RECORD_ACCESS:
-    return "AST_RECORD_ACCESS";
+  case AST_RECORD_DEFINITION_ACCESS:
+    return "AST_RECORD_DEFINITION_ACCESS";
   case AST_ARRAY_ACCESS:
     return "AST_ARRAY_ACCESS";
   case AST_INSTANTIATION:
@@ -136,8 +138,8 @@ const char *ast_type_to_string(enum ast_type type)
     return "AST_ARITHMETIC_EXPRESSION";
   case AST_BOOLEAN_EXPRESSION:
     return "AST_BOOLEAN_EXPRESSION";
-  case AST_RECORD:
-    return "AST_RECORD";
+  case AST_RECORD_DEFINITION:
+    return "AST_RECORD_DEFINITION";
   case AST_SUBROUTINE:
     return "AST_SUBROUTINE";
   case AST_RETURN:
@@ -207,7 +209,7 @@ int valid(ast_ *ast)
       return 0;
     break;
 
-  case AST_RECORD_ACCESS:
+  case AST_RECORD_DEFINITION_ACCESS:
     if (ast->field_name != NULL)
       return 0;
     break;
@@ -228,6 +230,7 @@ int valid(ast_ *ast)
       return 0;
     break;
 
+  case AST_RECORD_DEFINITION:
   case AST_RECORD:
     if (ast->record_name != NULL || ast->record_elements != NULL)
       return 0;
@@ -281,145 +284,111 @@ void print_indent(int indent)
 
 void print_ast_literal(ast_ *node, int indent)
 {
-
-  if (node->int_value.null == 0)
+  switch (node->type)
   {
-    printf("Integer: %d\n", node->int_value.value);
-  }
-  else
-  {
-    printf("Integer: null\n");
-  }
-  if (node->real_value.null == 0)
-  {
-    printf("Real: %f\n", node->real_value.value);
-  }
-  else
-  {
-    printf("Real: null\n");
-  }
-  if (node->char_value.null == 0)
-  {
-    printf("Character: %c\n", node->char_value.value);
-  }
-  else
-  {
-    printf("Character: null\n");
-  }
-  if (node->string_value != NULL)
-  {
+  case AST_INTEGER:
     print_indent(indent);
-    printf("String: \"%s\"\n", node->string_value);
-  }
-  else
-  {
-    printf("String : null\n");
-  }
-  if (node->boolean_value.null == 0)
-  {
-    printf("Boolean: %s\n", node->boolean_value.value ? "true" : "false");
-  }
-  else
-  {
-    printf("Boolean: null\n");
-  }
-  if (node->array_elements != NULL && node->array_size != 0)
-  {
-    printf("Array:\n");
-    int i = 0;
-    while (node->array_elements[i] != NULL)
+    if (node->int_value.null == 0)
     {
-      print_ast(node->array_elements[i], indent + 1);
-      i++;
+      printf("Integer: %d\n", node->int_value.value);
     }
+    else
+    {
+      printf("Integer: null\n");
+    }
+    break;
+  case AST_REAL:
     print_indent(indent);
-    printf("Array size: %d\n", node->array_size);
-  }
-  else
-  {
-    printf("Array: null\n");
-  }
+    if (node->real_value.null == 0)
+    {
+      printf("Real: %f\n", node->real_value.value);
+    }
+    else
+    {
+      printf("Real: null\n");
+    }
+    break;
+  case AST_CHARACTER:
+    print_indent(indent);
+    if (node->char_value.null == 0)
+    {
+      printf("Character: %c\n", node->char_value.value);
+    }
+    else
+    {
+      printf("Character: null\n");
+    }
+    break;
+  case AST_STRING:
+    print_indent(indent);
+    if (node->string_value != NULL)
+    {
+      printf("String: \"%s\"\n", node->string_value);
+    }
+    else
+    {
+      printf("String : null\n");
+    }
+    break;
+  case AST_BOOLEAN:
+    print_indent(indent);
+    if (node->boolean_value.null == 0)
+    {
+      printf("Boolean: %s\n", node->boolean_value.value ? "true" : "false");
+    }
+    else
+    {
+      printf("Boolean: null\n");
+    }
+    break;
+  case AST_ARRAY:
+    print_indent(indent);
+    if (node->array_elements != NULL && node->array_size != 0)
+    {
+      printf("Array:\n");
+      int i = 0;
+      while (node->array_elements[i] != NULL)
+      {
+        print_ast(node->array_elements[i], indent + 1);
+        i++;
+      }
+      print_indent(indent);
+      printf("Array size: %d\n", node->array_size);
+    }
+    else
+    {
+      printf("Array: null\n");
+    }
+    break;
+  case AST_RECORD:
+    if (node->record_name && node->record_elements != NULL)
+    {
+      print_indent(indent);
+      printf("Record: %s\n", node->record_name);
+      print_indent(indent);
+      printf("Record Elements:\n");
+      int d = 0;
+      while (node->record_elements[d] != NULL)
+      {
+        print_indent(indent + 1);
+        printf("Field: %s\n", node->record_elements[d]->element_name);
+        print_indent(indent + 2);
+        printf("Element:\n");
+        print_ast(node->record_elements[d]->element, indent + 3);
+        d++;
+      }
+      print_indent(indent);
+      printf("Number of elements: %d\n", node->field_count);
+    }
+    else
+    {
+      printf("Record: null\n");
+    }
 
-  // switch (node->type)
-  // {
-  // case AST_INTEGER:
-  //   print_indent(indent);
-  //   if (node->int_value.null == 0)
-  //   {
-  //     printf("Integer: %d\n", node->int_value.value);
-  //   }
-  //   else
-  //   {
-  //     printf("Integer: null\n");
-  //   }
-  //   break;
-  // case AST_REAL:
-  //   print_indent(indent);
-  //   if (node->real_value.null == 0)
-  //   {
-  //     printf("Real: %f\n", node->real_value.value);
-  //   }
-  //   else
-  //   {
-  //     printf("Real: null\n");
-  //   }
-  //   break;
-  // case AST_CHARACTER:
-  //   print_indent(indent);
-  //   if (node->char_value.null == 0)
-  //   {
-  //     printf("Character: %c\n", node->char_value.value);
-  //   }
-  //   else
-  //   {
-  //     printf("Character: null\n");
-  //   }
-  //   break;
-  // case AST_STRING:
-  //   if (node->string_value != NULL)
-  //   {
-  //     print_indent(indent);
-  //     printf("String: \"%s\"\n", node->string_value);
-  //   }
-  //   else
-  //   {
-  //     printf("String : null\n");
-  //   }
-  //   break;
-  // case AST_BOOLEAN:
-  //   print_indent(indent);
-  //   if (node->boolean_value.null == 0)
-  //   {
-  //     printf("Boolean: %s\n", node->boolean_value.value ? "true" : "false");
-  //   }
-  //   else
-  //   {
-  //     printf("Boolean: null\n");
-  //   }
-  //   break;
-  // case AST_ARRAY:
-  //   print_indent(indent);
-  //   if (node->array_elements != NULL && node->array_size != 0)
-  //   {
-  //     printf("Array:\n");
-  //     int i = 0;
-  //     while (node->array_elements[i] != NULL)
-  //     {
-  //       print_ast(node->array_elements[i], indent + 1);
-  //       i++;
-  //     }
-  //     print_indent(indent);
-  //     printf("Array size: %d\n", node->array_size);
-  //   }
-  //   else
-  //   {
-  //     printf("Array: null\n");
-  //   }
-
-  //   break;
-  // default:
-  //   break;
-  // }
+    break;
+  default:
+    break;
+  }
 }
 
 void print_ast(ast_ *node, int indent)
@@ -450,6 +419,7 @@ void print_ast(ast_ *node, int indent)
   case AST_STRING:
   case AST_BOOLEAN:
   case AST_ARRAY:
+  case AST_RECORD:
     print_ast_literal(node, indent);
     break;
   case AST_ASSIGNMENT:
@@ -485,7 +455,7 @@ void print_ast(ast_ *node, int indent)
       }
     }
     break;
-  case AST_RECORD_ACCESS:
+  case AST_RECORD_DEFINITION_ACCESS:
     if (node->record_name)
     {
       print_indent(indent);
@@ -547,7 +517,7 @@ void print_ast(ast_ *node, int indent)
       print_ast(node->right, indent + 2);
     }
     break;
-  case AST_RECORD:
+  case AST_RECORD_DEFINITION:
     if (node->record_name)
     {
       print_indent(indent);
@@ -562,7 +532,7 @@ void print_ast(ast_ *node, int indent)
       printf("Field: %s\n", node->record_elements[d]->element_name);
       print_indent(indent + 2);
       printf("Type:\n");
-      print_ast(node->record_elements[d]->type, indent + 3);
+      printf("%s\n", ast_type_to_string(node->record_elements[d]->element->type));
       print_indent(indent + 2);
       printf("Dimension: %d\n", node->record_elements[d]->dimension);
       d++;

@@ -1,18 +1,5 @@
-OUTPUT 4 < 6
-OUTPUT 'A' < 'B'
-OUTPUT 'adam' < 'adele'
-OUTPUT 4.1 > 4.0
-OUTPUT 3 = 3
-qty <- 10
-OUTPUT qty != 7
-OUTPUT 3 <= 4
-OUTPUT 4 <= 4
-OUTPUT 4 >= 3
-OUTPUT 4.5 >= 4.5
+CONSTANT SCORES <- [85, 90, 88, 92, 95]
+CONSTANT ALPHABET <- ['a', 'b', 'c', 'd', 'e', 'f']
 
-OUTPUT (3 = 3) AND (3 <= 4)
-x <- 10
-OUTPUT (x < 1) OR (x > 9)
-a <- 4
-b <- 6
-OUTPUT NOT (NOT (a < b))
+OUTPUT "Scores:", SCORES
+OUTPUT "AtF:", ALPHABET
