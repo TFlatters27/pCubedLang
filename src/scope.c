@@ -8,7 +8,7 @@ scope_ *init_scope()
   if (!scope)
   {
     fprintf(stderr, "Error: Memory allocation failed for scope initialization.\n");
-    return NULL;
+    exit(1);
   }
 
   // Initialize empty lists for subroutines, variables, and records
@@ -34,7 +34,7 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
     {
       fprintf(stderr, "Error: Invalid instantiation definition type.\n");
     }
-    return NULL;
+    exit(1);
   }
 
   // Check for conflicting record or subroutine names
@@ -97,7 +97,7 @@ ast_ *scope_get_instantiation_definition(scope_ *scope, const char *iname)
   if (!scope || !iname)
   {
     fprintf(stderr, "Error: Invalid scope or instantiation name.\n");
-    return NULL;
+    exit(1);
   }
 
   for (size_t i = 0; scope->instantiation_definitions[i] != NULL; i++)
@@ -113,8 +113,8 @@ ast_ *scope_get_instantiation_definition(scope_ *scope, const char *iname)
       return idef; // Record found
     }
   }
-
-  return NULL; // No matching subroutine or record found
+  fprintf(stderr, "Error: No instantiation definition found for '%s'\n", iname);
+  exit(1);
 }
 
 ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
@@ -122,7 +122,7 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
   if (!scope || !vdef)
   {
     fprintf(stderr, "Error: Invalid scope or variable definition.\n");
-    return NULL;
+    exit(1);
   }
 
   // Variable name is accessed via vdef->lhs->variable_name
@@ -137,7 +137,7 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
       if (scope->variable_definitions[i]->lhs->constant == 1)
       {
         fprintf(stderr, "Error: Cannot overwrite constant variable '%s'.\n", new_var_name);
-        return NULL; // Do not overwrite and return an error
+        exit(1);
       }
 
       // Overwrite the existing variable definition
@@ -170,7 +170,7 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
 
   // If no existing variable was found, add the new definition to the list
   add_ast_to_list(&scope->variable_definitions, vdef);
-  // printf("Added variable %s of type %s\n", vdef->lhs->variable_name, ast_type_to_string(vdef->rhs->type));
+  printf("Added variable {%s:%s} of type %s\n", vdef->lhs->variable_name, ast_type_to_string(vdef->lhs->type), ast_type_to_string(vdef->rhs->type));
 
   return vdef;
 }
@@ -180,7 +180,7 @@ ast_ *scope_get_variable_definition(scope_ *scope, const char *vname)
   if (!scope || !vname)
   {
     fprintf(stderr, "Error: Invalid scope or variable name.\n");
-    return NULL;
+    exit(1);
   }
 
   for (size_t i = 0; scope->variable_definitions[i] != NULL; i++)
@@ -191,5 +191,6 @@ ast_ *scope_get_variable_definition(scope_ *scope, const char *vname)
     }
   }
 
-  return NULL; // Variable not found
+  fprintf(stderr, "Error: Variable definition not found in scope.\n");
+  exit(1); // Variable not found
 }

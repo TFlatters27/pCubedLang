@@ -145,9 +145,9 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
   // Handle record access
   else if (parser->current_token->type == TOKEN_FULLSTOP)
   {
-    expression = init_ast(AST_RECORD_DEFINITION_ACCESS);
+    expression = init_ast(AST_RECORD_ACCESS);
     parser_expect(parser, TOKEN_FULLSTOP); // Consume '.'
-    expression->record_name = variable_name;
+    expression->variable_name = variable_name;
     expression->field_name = parser->current_token->value;
     parser_expect(parser, TOKEN_ID); // Consume field name
   }

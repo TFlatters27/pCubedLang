@@ -20,7 +20,7 @@ enum ast_type
 
     AST_ASSIGNMENT,    // For variable assignments
     AST_VARIABLE,      // For variable references
-    AST_RECORD_DEFINITION_ACCESS, // For accessing a field in a record
+    AST_RECORD_ACCESS, // For accessing a field in a record
     AST_ARRAY_ACCESS,  // For accessing an array element
     AST_INSTANTIATION, // For object instantiation or function calls
     AST_ARITHMETIC_EXPRESSION,

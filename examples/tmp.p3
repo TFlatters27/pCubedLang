@@ -1,5 +1,0 @@
-CONSTANT SCORES <- [85, 90, 88, 92, 95]
-CONSTANT ALPHABET <- ['a', 'b', 'c', 'd', 'e', 'f']
-
-OUTPUT "Scores:", SCORES
-OUTPUT "AtF:", ALPHABET

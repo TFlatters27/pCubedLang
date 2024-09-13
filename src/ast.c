@@ -128,8 +128,8 @@ const char *ast_type_to_string(enum ast_type type)
     return "AST_ASSIGNMENT";
   case AST_VARIABLE:
     return "AST_VARIABLE";
-  case AST_RECORD_DEFINITION_ACCESS:
-    return "AST_RECORD_DEFINITION_ACCESS";
+  case AST_RECORD_ACCESS:
+    return "AST_RECORD_ACCESS";
   case AST_ARRAY_ACCESS:
     return "AST_ARRAY_ACCESS";
   case AST_INSTANTIATION:
@@ -209,7 +209,7 @@ int valid(ast_ *ast)
       return 0;
     break;
 
-  case AST_RECORD_DEFINITION_ACCESS:
+  case AST_RECORD_ACCESS:
     if (ast->field_name != NULL)
       return 0;
     break;
@@ -455,11 +455,11 @@ void print_ast(ast_ *node, int indent)
       }
     }
     break;
-  case AST_RECORD_DEFINITION_ACCESS:
-    if (node->record_name)
+  case AST_RECORD_ACCESS:
+    if (node->variable_name)
     {
       print_indent(indent);
-      printf("Record: %s\n", node->record_name);
+      printf("Record variable: %s\n", node->variable_name);
     }
     if (node->field_name)
     {
@@ -473,7 +473,7 @@ void print_ast(ast_ *node, int indent)
     if (node->variable_name)
     {
       print_indent(indent + 1);
-      printf("Array: %s\n", node->variable_name);
+      printf("Array variable: %s\n", node->variable_name);
     }
     int b = 0;
     while (node->index[b] != NULL)

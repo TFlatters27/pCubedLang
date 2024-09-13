@@ -63,14 +63,14 @@
 ## Arrays
 
 - [x] Array assignment
-- [x] Array access
+- [ ] Array access
 - [x] Multi dimensional arrays
 - [ ] For-in iteration over arrays
 
 ## Records
 
 - [x] Declaration of records
-- [ ] Instantiation of records
+- [x] Instantiation of records
 - [ ] Record field access
 
 ## Subroutines
@@ -104,5 +104,4 @@
 ## Input & Output
 
 - [x] USERINPUT assignment to variables
-  - [ ] Add support for expressional input assignments (e.g `input <- 1 + 1`)
 - [x] OUTPUT variable to standard output
