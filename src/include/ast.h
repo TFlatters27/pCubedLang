@@ -17,7 +17,6 @@ enum ast_type
     AST_ARRAY,     // For array literals
     AST_RECORD,    // For record literals
 
-
     AST_ASSIGNMENT,    // For variable assignments
     AST_VARIABLE,      // For variable references
     AST_RECORD_ACCESS, // For accessing a field in a record
@@ -27,20 +26,20 @@ enum ast_type
     AST_BOOLEAN_EXPRESSION,
 
     AST_RECORD_DEFINITION, // For record creation
-    AST_SUBROUTINE,      // For subroutine definitions
-    AST_RETURN,          // For RETURN statements in subroutines
-    AST_OUTPUT,          // For OUTPUT statements
-    AST_DEFINITE_LOOP,   // For count-controlled loops (FOR loops)
-    AST_INDEFINITE_LOOP, // For condition-controlled loops (REPEAT & WHILE loops)
-    AST_SELECTION,       // For selection control blocks (IF-ELSE-ELSE IF statements)
+    AST_SUBROUTINE,        // For subroutine definitions
+    AST_RETURN,            // For RETURN statements in subroutines
+    AST_OUTPUT,            // For OUTPUT statements
+    AST_DEFINITE_LOOP,     // For count-controlled loops (FOR loops)
+    AST_INDEFINITE_LOOP,   // For condition-controlled loops (REPEAT & WHILE loops)
+    AST_SELECTION,         // For selection control blocks (IF-ELSE-ELSE IF statements)
 };
 
 // Structure representing an element (field) in a record.
 typedef struct AST_RECORD_DEFINITION_ELEMENT_STRUCT
 {
-    char *element_name;      // Name of the element (e.g., "name", "age")
+    char *element_name;         // Name of the element (e.g., "name", "age")
     struct AST_STRUCT *element; // AST of the element (e.g., AST_STRING, AST_ARRAY)
-    int dimension;           // Dimension of the element (e.g., [] or [[]])
+    int dimension;              // Dimension of the element (e.g., [] or [[]])
 } ast_record_element_;
 
 typedef struct

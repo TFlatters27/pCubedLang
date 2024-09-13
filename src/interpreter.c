@@ -211,7 +211,7 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
     return interpreter_process_assignment(interpreter, node);
   case AST_VARIABLE:
     return interpreter_process_variable(interpreter, node);
-  case AST_RECORD_DEFINITION_ACCESS:
+  case AST_RECORD_ACCESS:
     return interpreter_process_record_access(interpreter, node);
   case AST_ARRAY_ACCESS:
     return interpreter_process_array_access(interpreter, node);
