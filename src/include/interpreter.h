@@ -22,7 +22,6 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
 ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_record_definition(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_subroutine(interpreter_ *interpreter, ast_ *node);
-ast_ *interpreter_process_return(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node);

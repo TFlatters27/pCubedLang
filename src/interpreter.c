@@ -226,7 +226,7 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
   case AST_SUBROUTINE:
     return interpreter_process_subroutine(interpreter, node);
   case AST_RETURN:
-    return interpreter_process_return(interpreter, node);
+    return interpreter_process(interpreter, node->return_value);
   case AST_OUTPUT:
     return interpreter_process_output(interpreter, node);
   case AST_DEFINITE_LOOP:
@@ -339,138 +339,167 @@ ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> instantiation <<\n");
-
   // Use scope_get_instantiation_definition to find the record definition
   ast_ *inst_definition = scope_get_instantiation_definition(node->scope, node->class_name);
 
   if (!inst_definition)
   {
-    printf("Error: Record definition '%s' not found.\n", node->class_name);
-    return init_ast(AST_NOOP);
+    if (node->type == AST_RECORD_DEFINITION)
+    {
+      printf("Error: Record definition '%s' not found.\n", node->class_name);
+    }
+    else if (node->type == AST_SUBROUTINE)
+    {
+      printf("Error: Subroutine definition '%s' not found.\n", node->class_name);
+    }
+    exit(1);
   }
 
-  // Check if the number of arguments matches the number of fields in the record
-  if (node->arguments_count != inst_definition->field_count)
+  if (inst_definition->type == AST_RECORD_DEFINITION && (node->arguments_count != inst_definition->field_count))
   {
     printf("Error: Mismatched number of arguments for record instantiation '%s'.\n", node->class_name);
-    return init_ast(AST_NOOP);
+    exit(1);
   }
-
-  // Create a new AST_RECORD_DEFINITION node for the instantiated record
-  ast_ *new_record = init_ast(AST_RECORD_DEFINITION);
-  new_record->record_name = node->class_name;
-  new_record->record_elements = (ast_record_element_ **)init_ast_list();
-  new_record->field_count = 0;
-
-  printf("New instantiated record\n");
-
-  // Assign the values from the arguments to the corresponding fields
-  for (int i = 0; i < node->arguments_count; i++)
+  else if (inst_definition->type == AST_SUBROUTINE && (node->arguments_count != inst_definition->parameter_count))
   {
-    // Match the type of the argument with the record field type
-    if (node->arguments[i]->type == inst_definition->record_elements[i]->element->type)
-    {
-      printf("arg type : %s\n", ast_type_to_string(node->arguments[i]->type));
-      printf("record type : %s\n", ast_type_to_string(inst_definition->record_elements[i]->element->type));
-
-      // Allocate memory for the record element
-      ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
-      if (!record_element)
-      {
-        printf("Memory allocation error.\n");
-        exit(1);
-      }
-      // Set the element name from the instantiation definition
-      record_element->element_name = inst_definition->record_elements[i]->element_name;
-
-      // Initialize the value element based on the argument's type
-      ast_ *element = init_ast(node->arguments[i]->type);
-      switch (element->type)
-      {
-      case AST_INTEGER:
-        element->int_value = node->arguments[i]->int_value;
-        printf("Assigning integer %d to field %s\n", element->int_value.value, record_element->element_name);
-        break;
-      case AST_REAL:
-        element->real_value = node->arguments[i]->real_value;
-        printf("Assigning real %.2f to field %s\n", element->real_value.value, record_element->element_name);
-        break;
-      case AST_CHARACTER:
-        element->char_value = node->arguments[i]->char_value;
-        printf("Assigning character %c to field %s\n", element->char_value.value, record_element->element_name);
-        break;
-      case AST_STRING:
-        element->string_value = node->arguments[i]->string_value;
-        printf("Assigning string %s to field %s\n", element->string_value, record_element->element_name);
-        break;
-      case AST_BOOLEAN:
-        element->boolean_value = node->arguments[i]->boolean_value;
-        printf("Assigning boolean %d to field %s\n", element->boolean_value.value, record_element->element_name);
-        break;
-      case AST_ARRAY:
-        printf("Assigning array to field %s\n", record_element->element_name);
-        element->array_elements = node->arguments[i]->array_elements;
-        element->array_size = node->arguments[i]->array_size;
-        break;
-      default:
-        fprintf(stderr, "Error: Unsupported type for record instantiation.\n");
-        exit(1);
-      }
-
-      // Assign the element to the record element
-      record_element->element = element;
-      record_element->dimension = 0;
-
-      // Add the record element to the list of record elements
-      add_ast_to_list((ast_ ***)&new_record->record_elements, (ast_ *)record_element);
-      new_record->field_count++;
-
-      printf("Added to record {%s, %s}\n", record_element->element_name, ast_type_to_string(record_element->element->type));
-    }
-    else
-    {
-      printf("Error: Mismatched type for argument %d in record instantiation '%s'.\n", i, node->class_name);
-      return init_ast(AST_NOOP);
-    }
+    printf("Error: Mismatched number of arguments for subroutine instantiation '%s'.\n", node->class_name);
+    exit(1);
   }
 
-  return new_record;
-}
+  if (inst_definition->type == AST_RECORD_DEFINITION)
+  {
+    // Create a new AST_RECORD node for the instantiated record
+    ast_ *new_record = init_ast(AST_RECORD);
+    new_record->record_name = node->class_name;
+    new_record->record_elements = (ast_record_element_ **)init_ast_list();
+    new_record->field_count = 0;
 
+    // Assign the values from the arguments to the corresponding fields
+    for (int i = 0; i < node->arguments_count; i++)
+    {
+      // Match the type of the argument with the record field type
+      if (node->arguments[i]->type == inst_definition->record_elements[i]->element->type)
+      {
+        // Allocate memory for the record element
+        ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
+        if (!record_element)
+        {
+          printf("Memory allocation error.\n");
+          exit(1);
+        }
+        // Set the element name from the instantiation definition
+        record_element->element_name = inst_definition->record_elements[i]->element_name;
+
+        // Initialize the value element based on the argument's type
+        ast_ *element = init_ast(node->arguments[i]->type);
+        switch (element->type)
+        {
+        case AST_INTEGER:
+          element->int_value = node->arguments[i]->int_value;
+          break;
+        case AST_REAL:
+          element->real_value = node->arguments[i]->real_value;
+          break;
+        case AST_CHARACTER:
+          element->char_value = node->arguments[i]->char_value;
+          break;
+        case AST_STRING:
+          element->string_value = node->arguments[i]->string_value;
+          break;
+        case AST_BOOLEAN:
+          element->boolean_value = node->arguments[i]->boolean_value;
+          break;
+        case AST_ARRAY:
+          element->array_elements = node->arguments[i]->array_elements;
+          element->array_size = node->arguments[i]->array_size;
+          break;
+        default:
+          fprintf(stderr, "Error: Unsupported type for record instantiation.\n");
+          exit(1);
+        }
+
+        // Assign the element to the record element
+        record_element->element = element;
+        record_element->dimension = 0;
+
+        // Add the record element to the list of record elements
+        add_ast_to_list((ast_ ***)&new_record->record_elements, (ast_ *)record_element);
+        new_record->field_count++;
+      }
+      else
+      {
+        printf("Error: Mismatched type for argument %d in record instantiation '%s'.\n", i, node->class_name);
+        return init_ast(AST_NOOP);
+      }
+    }
+
+    return new_record;
+  }
+  else if (inst_definition->type == AST_SUBROUTINE)
+  {
+
+    // Assign the arguments to the subroutine's parameters
+    for (int i = 0; i < node->arguments_count; i++)
+    {
+      ast_ *var = init_ast(AST_ASSIGNMENT);
+      var->lhs = init_ast(AST_VARIABLE);
+      var->lhs->variable_name = inst_definition->parameters[i]->variable_name;
+      var->rhs = node->arguments[i];
+      scope_add_variable_definition(inst_definition->scope, var);
+    }
+
+    for (int i = 0; inst_definition->body[i] != NULL; i++)
+    {
+      ast_ *current_statement = inst_definition->body[i];
+
+      if (current_statement->type == AST_RETURN)
+      {
+        // Return the processed value of the return statement
+        return interpreter_process(interpreter, current_statement);
+      }
+
+      interpreter_process(interpreter, current_statement);
+    }
+  }
+  return init_ast(AST_NOOP);
+}
 ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ *node)
 {
   ast_ *left_val = NULL;
   ast_ *right_val = NULL;
 
+  // Process the left side, if not null
   if (node->left != NULL)
   {
     left_val = interpreter_process(interpreter, node->left);
   }
 
+  // Process the right side, which should always exist
   right_val = interpreter_process(interpreter, node->right);
 
-  if (left_val != NULL && left_val->int_value.null == 1)
+  // Check for null values before proceeding
+  if ((left_val && ((left_val->type == AST_INTEGER && left_val->int_value.null == 1) ||
+                    (left_val->type == AST_REAL && left_val->real_value.null == 1) ||
+                    (left_val->type == AST_CHARACTER && left_val->char_value.null == 1) ||
+                    (left_val->type == AST_STRING && left_val->string_value == NULL))) ||
+      (right_val && ((right_val->type == AST_INTEGER && right_val->int_value.null == 1) ||
+                     (right_val->type == AST_REAL && right_val->real_value.null == 1) ||
+                     (right_val->type == AST_CHARACTER && right_val->char_value.null == 1) ||
+                     (right_val->type == AST_STRING && right_val->string_value == NULL))))
   {
-    perror("Left operand is null");
-    exit(1);
-  }
-
-  if (right_val != NULL && right_val->int_value.null == 1)
-  {
-    perror("Right operand is null");
+    printf("Error: Null value in arithmetic expression\n");
     exit(1);
   }
 
   // Handle unary minus operation
   if ((strcmp(node->op, "-") == 0) && node->left == NULL)
   {
-    if (right_val->type == AST_INTEGER && right_val->int_value.null == 0)
+    if (right_val->type == AST_INTEGER)
     {
       right_val->int_value.value = -(right_val->int_value.value);
       return right_val;
     }
-    else if (right_val->type == AST_REAL && right_val->real_value.null == 0)
+    else if (right_val->type == AST_REAL)
     {
       right_val->real_value.value = -(right_val->real_value.value);
       return right_val;
@@ -480,20 +509,17 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   // Handle binary operations
   if (strcmp(node->op, "+") == 0)
   {
-    if ((left_val->type == AST_CHARACTER && left_val->char_value.null == 0) ||
-        (right_val->type == AST_CHARACTER && right_val->char_value.null == 0))
+    if ((left_val->type == AST_CHARACTER || left_val->type == AST_STRING) &&
+        (right_val->type == AST_CHARACTER || right_val->type == AST_STRING))
     {
       return concatenate(left_val, right_val); // General concatenation for char/string
     }
-
-    else if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
-             left_val->int_value.null == 0 && right_val->int_value.null == 0)
+    else if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
       left_val->int_value.value += right_val->int_value.value;
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
-             left_val->real_value.null == 0 && right_val->real_value.null == 0)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
       left_val->real_value.value += right_val->real_value.value;
       return left_val;
@@ -501,14 +527,12 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   }
   else if (strcmp(node->op, "-") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
-        left_val->int_value.null == 0 && right_val->int_value.null == 0)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
       left_val->int_value.value -= right_val->int_value.value;
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
-             left_val->real_value.null == 0 && right_val->real_value.null == 0)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
       left_val->real_value.value -= right_val->real_value.value;
       return left_val;
@@ -516,14 +540,12 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   }
   else if (strcmp(node->op, "*") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
-        left_val->int_value.null == 0 && right_val->int_value.null == 0)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
       left_val->int_value.value *= right_val->int_value.value;
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
-             left_val->real_value.null == 0 && right_val->real_value.null == 0)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
       left_val->real_value.value *= right_val->real_value.value;
       return left_val;
@@ -531,14 +553,12 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   }
   else if (strcmp(node->op, "/") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
-        left_val->int_value.null == 0 && right_val->int_value.null == 0)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
       left_val->int_value.value /= right_val->int_value.value;
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
-             left_val->real_value.null == 0 && right_val->real_value.null == 0)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
       left_val->real_value.value /= right_val->real_value.value;
       return left_val;
@@ -546,14 +566,12 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   }
   else if (strcmp(node->op, "^") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
-        left_val->int_value.null == 0 && right_val->int_value.null == 0)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
       left_val->int_value.value = pow(left_val->int_value.value, right_val->int_value.value);
       return left_val;
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL &&
-             left_val->real_value.null == 0 && right_val->real_value.null == 0)
+    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
       left_val->real_value.value = pow(left_val->real_value.value, right_val->real_value.value);
       return left_val;
@@ -561,8 +579,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   }
   else if (strcmp(node->op, "DIV") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
-        left_val->int_value.null == 0 && right_val->int_value.null == 0)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
       left_val->int_value.value /= right_val->int_value.value; // Integer division
       return left_val;
@@ -570,8 +587,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   }
   else if (strcmp(node->op, "MOD") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER &&
-        left_val->int_value.null == 0 && right_val->int_value.null == 0)
+    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
       left_val->int_value.value %= right_val->int_value.value;
       return left_val;
@@ -580,8 +596,9 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
 
   printf("Invalid arithmetic operation: %s\n", node->op);
   exit(1);
-  return init_ast(AST_NOOP);
+  return init_ast(AST_NOOP); // Return a no-op if no valid operation found
 }
+
 ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *node)
 {
   ast_ *left_val = NULL;
@@ -741,15 +758,6 @@ ast_ *interpreter_process_subroutine(interpreter_ *interpreter, ast_ *node)
 
   return node;
 }
-ast_ *interpreter_process_return(interpreter_ *interpreter, ast_ *node)
-{
-  printf(">> return <<\n");
-
-  // Process the return value
-  ast_ *return_value = interpreter_process(interpreter, node->return_value);
-
-  return return_value;
-}
 
 ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node)
 {
@@ -775,7 +783,6 @@ ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node)
 ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> definite_loop <<\n");
-
   return init_ast(AST_NOOP);
 }
 

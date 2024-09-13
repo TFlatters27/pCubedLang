@@ -818,14 +818,13 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
   {
     ast_ *statement = parser_parse_statement(parser, scope);
 
-    // Check if the statement is a RETURN
     if (statement->type == AST_RETURN)
-    {
       subroutine_ast->return_value = statement->return_value;
-    }
 
     add_ast_to_list(&(subroutine_ast->body), statement);
-    parser_expect(parser, TOKEN_NEWLINE); // Consume newline
+
+    if (parser->current_token->type == TOKEN_NEWLINE)
+      parser_expect(parser, TOKEN_NEWLINE);
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDSUBROUTINE'
