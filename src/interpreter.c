@@ -337,6 +337,62 @@ ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
 {
+  // Processing built-in methods
+  if (strcmp(node->class_name, "LEN") == 0)
+  {
+    printf(">> LEN method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "POSITION") == 0)
+  {
+    printf(">> POSITION method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "SUBSTRING") == 0)
+  {
+    printf(">> SUBSTRING method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "SLICE") == 0)
+  {
+    printf(">> SLICE method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "STRING_TO_INT") == 0)
+  {
+    printf(">> STRING_TO_INT method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "STRING_TO_REAL") == 0)
+  {
+    printf(">> STRING_TO_REAL method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "INT_TO_STRING") == 0)
+  {
+    printf(">> INT_TO_STRING method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "REAL_TO_STRING") == 0)
+  {
+    printf(">> REAL_TO_STRING method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "CHAR_TO_CODE") == 0)
+  {
+    printf(">> CHAR_TO_CODE method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "CODE_TO_CHAR") == 0)
+  {
+    printf(">> CODE_TO_CHAR method <<\n");
+    return init_ast(AST_NOOP);
+  }
+  else if (strcmp(node->class_name, "RANDOM_INT") == 0)
+  {
+    printf(">> RANDOM_INT method <<\n");
+    return init_ast(AST_NOOP);
+  }
   // Use scope_get_instantiation_definition to find the record definition
   ast_ *inst_definition = scope_get_instantiation_definition(get_scope(node), node->class_name);
 
@@ -436,7 +492,6 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
   else if (inst_definition->type == AST_SUBROUTINE)
   {
     ast_ *inst_definition_copy = deep_copy(inst_definition);
-    scope_ *local_scope = init_scope();
     // Assign the arguments to the subroutine's parameters within this new scope
     for (int i = 0; i < node->arguments_count; i++)
     {
@@ -447,14 +502,14 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
       *var->rhs = *node->arguments[i];
 
       // Add the variable to the subroutine-specific scope
-      scope_add_variable_definition(local_scope, var);
+      scope_add_variable_definition(node->scope, var);
     }
 
     // Process the function body within this new scope
     for (int i = 0; inst_definition_copy->body[i] != NULL; i++)
     {
       ast_ *current_statement = inst_definition_copy->body[i];
-      set_scope(current_statement, local_scope);
+      set_scope(current_statement, node->scope);
 
       if (current_statement->type == AST_RETURN)
       {

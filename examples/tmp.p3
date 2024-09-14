@@ -3,8 +3,9 @@ SUBROUTINE showAdd(a, b)
   OUTPUT result
 ENDSUBROUTINE
 
+test <- "Testing 1.. 2... 3..."
 SUBROUTINE sayHi()
-  OUTPUT "Hi"
+  OUTPUT test
 ENDSUBROUTINE
 
 SUBROUTINE add(a, b)
