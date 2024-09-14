@@ -185,6 +185,10 @@ void set_scope(ast_ *node, scope_ *scope)
       i++;
     }
   }
+  case AST_RETURN:
+  {
+    set_scope(node->return_value, scope);
+  }
   default:
     break;
   }
@@ -192,11 +196,18 @@ void set_scope(ast_ *node, scope_ *scope)
 
 scope_ *get_scope(ast_ *node)
 {
-  if (node == NULL || node->scope == NULL)
+  if (node == NULL)
   {
-    fprintf(stderr, "Error: Invalid node or node scope.\n");
+    fprintf(stderr, "Error: Invalid node\n");
     return NULL;
   }
+
+  if (node->scope == NULL)
+  {
+    fprintf(stderr, "Error: Invalid node scope\n");
+    return NULL;
+  }
+
   return node->scope;
 }
 

@@ -17,7 +17,7 @@ showAdd("Hello", "World!")
 
 sayHi()
 
-addition <- add(2,3)
+addition <- add(2,3) * 3
 OUTPUT addition
-concat <- add("Hello", "World!")
+concat <- add("Goodbye", "Universe!")
 OUTPUT concat

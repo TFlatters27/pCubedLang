@@ -225,8 +225,6 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
     return interpreter_process_record_definition(interpreter, node);
   case AST_SUBROUTINE:
     return interpreter_process_subroutine(interpreter, node);
-  case AST_RETURN:
-    return interpreter_process(interpreter, node->return_value);
   case AST_OUTPUT:
     return interpreter_process_output(interpreter, node);
   case AST_DEFINITE_LOOP:
@@ -460,7 +458,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
 
       if (current_statement->type == AST_RETURN)
       {
-        return interpreter_process(interpreter, current_statement);
+        return interpreter_process(interpreter, current_statement->return_value);
       }
 
       interpreter_process(interpreter, current_statement);
