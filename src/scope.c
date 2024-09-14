@@ -18,6 +18,188 @@ scope_ *init_scope()
   return scope;
 }
 
+void set_scope(ast_ *node, scope_ *scope)
+{
+  if (scope == NULL)
+    return;
+  if (node == NULL)
+  {
+    // break condition
+    return;
+  }
+
+  // Assign the scope to the node
+  node->scope = scope;
+
+  // If node has child nodes, propagate the scope to them
+  switch (node->type)
+  {
+  case AST_COMPOUND:
+  {
+    int i = 0;
+    while (node->compound_value[i] != NULL)
+    {
+      set_scope(node->compound_value[i], scope);
+      i++;
+    }
+  }
+  break;
+  case AST_ASSIGNMENT:
+    if (node->lhs != NULL)
+    {
+      set_scope(node->lhs, scope);
+    }
+    if (node->rhs != NULL)
+    {
+      set_scope(node->rhs, scope);
+    }
+    break;
+  case AST_ARITHMETIC_EXPRESSION:
+  case AST_BOOLEAN_EXPRESSION:
+    if (node->left != NULL)
+    {
+      set_scope(node->left, scope);
+    }
+    if (node->right != NULL)
+    {
+      set_scope(node->right, scope);
+    }
+    break;
+  case AST_ARRAY_ACCESS:
+  {
+    int i = 0;
+    while (node->index[i] != NULL)
+    {
+      set_scope(node->index[i], scope);
+      i++;
+    }
+  }
+  break;
+  case AST_INSTANTIATION:
+  {
+    int i = 0;
+    while (node->arguments[i] != NULL)
+    {
+      set_scope(node->arguments[i], scope);
+      i++;
+    }
+  }
+  break;
+  case AST_SUBROUTINE:
+  {
+    // Set scope for parameters and body
+    int i = 0;
+    while (node->parameters[i] != NULL)
+    {
+      set_scope(node->parameters[i], scope);
+      i++;
+    }
+    i = 0;
+    while (node->body[i] != NULL)
+    {
+      set_scope(node->body[i], scope);
+      i++;
+    }
+  }
+  break;
+  case AST_DEFINITE_LOOP:
+  case AST_INDEFINITE_LOOP:
+    if (node->loop_variable != NULL)
+    {
+      set_scope(node->loop_variable, scope);
+    }
+    if (node->collection_expr != NULL)
+    {
+      set_scope(node->collection_expr, scope);
+    }
+    if (node->start_expr != NULL)
+    {
+      set_scope(node->start_expr, scope);
+    }
+    if (node->end_expr != NULL)
+    {
+      set_scope(node->end_expr, scope);
+    }
+    if (node->step_expr != NULL)
+    {
+      set_scope(node->step_expr, scope);
+    }
+    {
+      int i = 0;
+      while (node->loop_body[i] != NULL)
+      {
+        set_scope(node->loop_body[i], scope);
+        i++;
+      }
+    }
+    break;
+  case AST_SELECTION:
+    if (node->if_condition != NULL)
+    {
+      set_scope(node->if_condition, scope);
+    }
+    {
+      int i = 0;
+      while (node->if_body[i] != NULL)
+      {
+        set_scope(node->if_body[i], scope);
+        i++;
+      }
+    }
+
+    // Set scope for ELSE IF conditions and bodies
+    if (node->else_if_conditions != NULL && node->else_if_bodies != NULL)
+    {
+      int i = 0;
+      while (node->else_if_conditions[i] != NULL && node->else_if_bodies[i] != NULL)
+      {
+        set_scope(node->else_if_conditions[i], scope);
+
+        int j = 0;
+        while (node->else_if_bodies[i][j] != NULL)
+        {
+          set_scope(node->else_if_bodies[i][j], scope);
+          j++;
+        }
+        i++;
+      }
+    }
+
+    // Set scope for ELSE body
+    if (node->else_body != NULL)
+    {
+      int i = 0;
+      while (node->else_body[i] != NULL)
+      {
+        set_scope(node->else_body[i], scope);
+        i++;
+      }
+    }
+    break;
+  case AST_OUTPUT:
+  {
+    int i = 0;
+    while (node->output_expressions[i] != NULL)
+    {
+      set_scope(node->output_expressions[i], scope);
+      i++;
+    }
+  }
+  default:
+    break;
+  }
+}
+
+scope_ *get_scope(ast_ *node)
+{
+  if (node == NULL || node->scope == NULL)
+  {
+    fprintf(stderr, "Error: Invalid node or node scope.\n");
+    return NULL;
+  }
+  return node->scope;
+}
+
 ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
 {
   if (!scope || !idef)
@@ -170,7 +352,6 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
 
   // If no existing variable was found, add the new definition to the list
   add_ast_to_list(&scope->variable_definitions, vdef);
-  printf("Added variable {%s:%s} of type %s\n", vdef->lhs->variable_name, ast_type_to_string(vdef->lhs->type), ast_type_to_string(vdef->rhs->type));
 
   return vdef;
 }

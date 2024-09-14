@@ -3,14 +3,14 @@
 #include <stdio.h>
 #include <string.h>
 
-parser_ *init_parser(lexer_ *lexer)
+parser_ *init_parser(lexer_ *lexer, scope_ *scope)
 {
   parser_ *parser = calloc(1, sizeof(struct PARSER_STRUCT));
   parser->lexer = lexer;
   parser->current_token = lexer_next(lexer);
   parser->prev_token = parser->current_token;
 
-  parser->scope = init_scope();
+  parser->scope = scope;
 
   return parser;
 }
@@ -59,8 +59,8 @@ ast_ *parser_parse_statement(parser_ *parser, scope_ *scope)
 ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
 {
   ast_ *compound = init_ast(AST_COMPOUND);
-  compound->scope = scope;
   compound->compound_value = init_ast_list(); // Use init_ast_list to initialize the list
+  set_scope(compound, scope);
 
   do
   {
@@ -70,7 +70,7 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
       if (ast_statement->type != AST_NOOP)
       {
         print_ast(ast_statement, 0);
-        ast_statement->scope = scope;
+        set_scope(ast_statement, scope);
         add_ast_to_list(&(compound->compound_value), ast_statement);
       }
     }
@@ -80,6 +80,7 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
     }
   } while (parser->current_token->type != TOKEN_EOF);
 
+  printf("****************************************************************\n");
   return compound;
 }
 
@@ -185,7 +186,7 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
     expression->constant = is_constant;
     expression->userinput = is_userinput;
   }
-  expression->scope = scope;
+  set_scope(expression, scope);
   return expression;
 }
 
@@ -208,7 +209,7 @@ ast_ *parse_array(parser_ *parser, scope_ *scope)
   }
 
   parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
-  expression->scope = scope;
+  set_scope(expression, scope);
   return expression;
 }
 
@@ -222,7 +223,7 @@ ast_ *parse_literal(parser_ *parser, scope_ *scope)
     expression = init_ast(AST_INTEGER);
     expression->int_value.value = atoi(parser->current_token->value);
     expression->int_value.null = 0;
-    expression->scope = scope;
+    set_scope(expression, scope);
     parser_expect(parser, TOKEN_INT);
   }
   else if (parser->current_token->type == TOKEN_REAL)
@@ -230,7 +231,7 @@ ast_ *parse_literal(parser_ *parser, scope_ *scope)
     expression = init_ast(AST_REAL);
     expression->real_value.value = atof(parser->current_token->value);
     expression->real_value.null = 0;
-    expression->scope = scope;
+    set_scope(expression, scope);
     parser_expect(parser, TOKEN_REAL);
   }
   else if (parser->current_token->type == TOKEN_CHAR)
@@ -238,7 +239,7 @@ ast_ *parse_literal(parser_ *parser, scope_ *scope)
     expression = init_ast(AST_CHARACTER);
     expression->char_value.value = parser->current_token->value[0];
     expression->char_value.null = 0;
-    expression->scope = scope;
+    set_scope(expression, scope);
     parser_expect(parser, TOKEN_CHAR);
   }
   else if (parser->current_token->type == TOKEN_BOOL)
@@ -246,14 +247,14 @@ ast_ *parse_literal(parser_ *parser, scope_ *scope)
     expression = init_ast(AST_BOOLEAN);
     expression->boolean_value.value = strcmp(parser->current_token->value, "True") == 0;
     expression->boolean_value.null = 0;
-    expression->scope = scope;
+    set_scope(expression, scope);
     parser_expect(parser, TOKEN_BOOL);
   }
   else if (parser->current_token->type == TOKEN_STRING)
   {
     expression = init_ast(AST_STRING);
     expression->string_value = strdup(parser->current_token->value);
-    expression->scope = scope;
+    set_scope(expression, scope);
     parser_expect(parser, TOKEN_STRING);
   }
   else if (parser->current_token->type == TOKEN_LBRACKET)
@@ -282,7 +283,8 @@ ast_ *parse_arithmetic_operation(parser_ *parser, ast_ *left, scope_ *scope)
     ast_ *unary_expression = init_ast(AST_ARITHMETIC_EXPRESSION);
     unary_expression->op = strdup("-");
     unary_expression->right = right_expression;
-    unary_expression->scope = scope;
+    set_scope(unary_expression, scope);
+
     return unary_expression;
   }
 
@@ -301,7 +303,7 @@ ast_ *parse_arithmetic_operation(parser_ *parser, ast_ *left, scope_ *scope)
 
   arith_op->left = left;
   arith_op->right = right_expression;
-  arith_op->scope = scope;
+  set_scope(arith_op, scope);
   return arith_op;
 }
 
@@ -322,7 +324,7 @@ ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
 
   rel_op->left = left;
   rel_op->right = right_expression;
-  rel_op->scope = scope;
+  set_scope(rel_op, scope);
   return rel_op;
 }
 
@@ -345,7 +347,7 @@ ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
     ast_ *unary_expression = init_ast(AST_BOOLEAN_EXPRESSION);
     unary_expression->op = strdup("NOT");
     unary_expression->right = right_expression;
-    unary_expression->scope = scope;
+    set_scope(unary_expression, scope);
     return unary_expression;
   }
 
@@ -364,7 +366,7 @@ ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
 
   bool_op->left = left;
   bool_op->right = right_expression;
-  bool_op->scope = scope;
+  set_scope(bool_op, scope);
   return bool_op;
 }
 
@@ -445,12 +447,12 @@ ast_ *handle_id(parser_ *parser, scope_ *scope)
     ast_ *assignment = init_ast(AST_ASSIGNMENT);
     assignment->lhs = lhs;
     assignment->rhs = rhs;
-    assignment->scope = scope;
+    set_scope(assignment, scope);
     return assignment; // Return the full assignment AST node
   }
 
   // If no assignment token is found, treat it as a standalone expression
-  lhs->scope = scope;
+  set_scope(lhs, scope);
   return lhs;
 }
 
@@ -504,7 +506,7 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
 
     parser_expect(parser, TOKEN_ID); // Consume 'ENDWHILE'
   }
-  loop_ast->scope = scope;
+  set_scope(loop_ast, scope);
   return loop_ast;
 }
 
@@ -587,7 +589,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDFOR'
-  loop_ast->scope = scope;
+  set_scope(loop_ast, scope);
   return loop_ast;
 }
 
@@ -683,7 +685,7 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
   // Set the parsed ELSE IF conditions and bodies into the AST
   selection_ast->else_if_conditions = else_if_conditions;
   selection_ast->else_if_bodies = else_if_bodies;
-  selection_ast->scope = scope;
+  set_scope(selection_ast, scope);
   return selection_ast;
 }
 
@@ -767,22 +769,22 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDRECORD'
-  record_ast->scope = scope;
+  set_scope(record_ast, scope);
   return record_ast;
 }
 
 ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
 {
-  // Expect 'SUBROUTINE' keyword and the subroutine's name
+  // Expect 'SUBROUTINE' keyword and subroutine name
   parser_expect(parser, TOKEN_ID); // Consume 'SUBROUTINE'
   char *subroutine_name = parser->current_token->value;
-  parser_expect(parser, TOKEN_ID); // Consume the subroutine name
+  parser_expect(parser, TOKEN_ID); // Consume subroutine name
 
-  // Create the AST node for the subroutine
+  // Create the subroutine AST node
   ast_ *subroutine_ast = init_ast(AST_SUBROUTINE);
-  subroutine_ast->subroutine_name = subroutine_name;
+  subroutine_ast->subroutine_name = strdup(subroutine_name);
 
-  // Parse the parameter list
+  // Parse parameter list
   parser_expect(parser, TOKEN_LPAREN); // Consume '('
   subroutine_ast->parameters = init_ast_list();
 
@@ -791,15 +793,13 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
     if (parser->current_token->type == TOKEN_ID)
     {
       ast_ *param = init_ast(AST_VARIABLE);
-      param->variable_name = parser->current_token->value;
+      param->variable_name = strdup(parser->current_token->value);
       add_ast_to_list(&(subroutine_ast->parameters), param);
       subroutine_ast->parameter_count++;
-      parser_expect(parser, TOKEN_ID); // Consume the parameter name
+      parser_expect(parser, TOKEN_ID); // Consume the parameter
 
       if (parser->current_token->type == TOKEN_COMMA)
-      {
         parser_expect(parser, TOKEN_COMMA); // Consume ','
-      }
     }
     else
     {
@@ -809,26 +809,28 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
   }
 
   parser_expect(parser, TOKEN_RPAREN);  // Consume ')'
-  parser_expect(parser, TOKEN_NEWLINE); // Consume newline
+  parser_expect(parser, TOKEN_NEWLINE); // Consume newline after parameters
 
   // Parse the subroutine body
   subroutine_ast->body = init_ast_list();
 
   while (strcmp(parser->current_token->value, "ENDSUBROUTINE") != 0)
   {
-    ast_ *statement = parser_parse_statement(parser, scope);
+    ast_ *statement = parser_parse_statement(parser, get_scope(subroutine_ast)); // Use subroutine's local scope
 
     if (statement->type == AST_RETURN)
+    {
+      // Add return to the body, interpreter will handle actual returning logic
       subroutine_ast->return_value = statement->return_value;
+    }
 
     add_ast_to_list(&(subroutine_ast->body), statement);
 
     if (parser->current_token->type == TOKEN_NEWLINE)
-      parser_expect(parser, TOKEN_NEWLINE);
+      parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
   }
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDSUBROUTINE'
-  subroutine_ast->scope = scope;
   return subroutine_ast;
 }
 
@@ -842,7 +844,7 @@ ast_ *handle_return(parser_ *parser, scope_ *scope)
 
   // Parse the expression following the RETURN keyword
   return_ast->return_value = parse_expression(parser, scope);
-  return_ast->scope = scope;
+  set_scope(return_ast, scope);
 
   return return_ast;
 }
@@ -872,6 +874,6 @@ ast_ *handle_output(parser_ *parser, scope_ *scope)
     }
   } while (parser->current_token->type != TOKEN_NEWLINE);
 
-  output_ast->scope = scope;
+  set_scope(output_ast, scope);
   return output_ast;
 }

@@ -22,7 +22,7 @@ typedef struct
 } keyword_map_entry;
 
 // Function prototypes
-parser_ *init_parser(lexer_ *lexer);
+parser_ *init_parser(lexer_ *lexer, scope_ *scope);
 
 void parser_expect(parser_ *parser, enum token_type expected_type);
 

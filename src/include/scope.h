@@ -11,6 +11,10 @@ typedef struct SCOPE_STRUCT
 
 scope_ *init_scope();
 
+void set_scope(ast_ *node, scope_ *scope);
+
+scope_ *get_scope(ast_ *node);
+
 ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef);
 
 ast_ *scope_get_instantiation_definition(scope_ *scope, const char *iname);

@@ -101,6 +101,227 @@ void add_ast_to_list(ast_ ***list, ast_ *new_ast)
   (*list)[count + 1] = NULL;
 }
 
+ast_ *deep_copy(ast_ *original)
+{
+  if (original == NULL)
+  {
+    return NULL;
+  }
+
+  // Allocate memory for the new AST node
+  ast_ *copy = init_ast(original->type);
+  if (copy == NULL)
+  {
+    return NULL; // Return NULL if memory allocation failed
+  }
+
+  // Copy simple fields
+  copy->int_value = original->int_value;
+  copy->real_value = original->real_value;
+  copy->char_value = original->char_value;
+  copy->boolean_value = original->boolean_value;
+
+  copy->constant = original->constant;
+  copy->userinput = original->userinput;
+
+  copy->array_size = original->array_size;
+  copy->field_count = original->field_count;
+  copy->parameter_count = original->parameter_count;
+  copy->arguments_count = original->arguments_count;
+
+  // Deep copy of strings
+  copy->string_value = original->string_value ? strdup(original->string_value) : NULL;
+  copy->variable_name = original->variable_name ? strdup(original->variable_name) : NULL;
+  copy->field_name = original->field_name ? strdup(original->field_name) : NULL;
+  copy->class_name = original->class_name ? strdup(original->class_name) : NULL;
+  copy->record_name = original->record_name ? strdup(original->record_name) : NULL;
+  copy->op = original->op ? strdup(original->op) : NULL;
+  copy->subroutine_name = original->subroutine_name ? strdup(original->subroutine_name) : NULL;
+
+  // Deep copy of AST subtrees (lhs, rhs, left, right, condition, etc.)
+  copy->lhs = deep_copy(original->lhs);
+  copy->rhs = deep_copy(original->rhs);
+  copy->left = deep_copy(original->left);
+  copy->right = deep_copy(original->right);
+  copy->return_value = deep_copy(original->return_value);
+  copy->loop_variable = deep_copy(original->loop_variable);
+  copy->start_expr = deep_copy(original->start_expr);
+  copy->end_expr = deep_copy(original->end_expr);
+  copy->step_expr = deep_copy(original->step_expr);
+  copy->collection_expr = deep_copy(original->collection_expr);
+  copy->condition = deep_copy(original->condition);
+  copy->if_condition = deep_copy(original->if_condition);
+
+  // Deep copy of AST lists (compound_value, array_elements, arguments, etc.)
+  if (original->compound_value)
+  {
+    size_t compound_size = 0;
+    while (original->compound_value[compound_size] != NULL)
+    {
+      compound_size++;
+    }
+
+    copy->compound_value = malloc((compound_size + 1) * sizeof(ast_ *));
+    for (size_t i = 0; i < compound_size; i++)
+    {
+      copy->compound_value[i] = deep_copy(original->compound_value[i]);
+    }
+    copy->compound_value[compound_size] = NULL;
+  }
+
+  if (original->array_elements)
+  {
+    copy->array_elements = malloc((original->array_size + 1) * sizeof(ast_ *));
+    for (int i = 0; i < original->array_size; i++)
+    {
+      copy->array_elements[i] = deep_copy(original->array_elements[i]);
+    }
+    copy->array_elements[original->array_size] = NULL;
+  }
+
+  if (original->arguments)
+  {
+    copy->arguments = malloc((original->arguments_count) * sizeof(ast_ *));
+    for (int i = 0; i < original->arguments_count; i++)
+    {
+      copy->arguments[i] = deep_copy(original->arguments[i]);
+    }
+  }
+
+  if (original->parameters)
+  {
+    copy->parameters = malloc((original->parameter_count) * sizeof(ast_ *));
+    for (int i = 0; i < original->parameter_count; i++)
+    {
+      copy->parameters[i] = deep_copy(original->parameters[i]);
+    }
+  }
+
+  if (original->body)
+  {
+    size_t body_size = 0;
+    while (original->body[body_size] != NULL)
+    {
+      body_size++;
+    }
+
+    copy->body = malloc((body_size + 1) * sizeof(ast_ *));
+    for (size_t i = 0; i < body_size; i++)
+    {
+      copy->body[i] = deep_copy(original->body[i]);
+    }
+    copy->body[body_size] = NULL;
+  }
+
+  if (original->output_expressions)
+  {
+    size_t output_size = 0;
+    while (original->output_expressions[output_size] != NULL)
+    {
+      output_size++;
+    }
+
+    copy->output_expressions = malloc((output_size + 1) * sizeof(ast_ *));
+    for (size_t i = 0; i < output_size; i++)
+    {
+      copy->output_expressions[i] = deep_copy(original->output_expressions[i]);
+    }
+    copy->output_expressions[output_size] = NULL;
+  }
+
+  if (original->loop_body)
+  {
+    size_t loop_body_size = 0;
+    while (original->loop_body[loop_body_size] != NULL)
+    {
+      loop_body_size++;
+    }
+
+    copy->loop_body = malloc((loop_body_size + 1) * sizeof(ast_ *));
+    for (size_t i = 0; i < loop_body_size; i++)
+    {
+      copy->loop_body[i] = deep_copy(original->loop_body[i]);
+    }
+    copy->loop_body[loop_body_size] = NULL;
+  }
+
+  if (original->if_body)
+  {
+    size_t if_body_size = 0;
+    while (original->if_body[if_body_size] != NULL)
+    {
+      if_body_size++;
+    }
+
+    copy->if_body = malloc((if_body_size + 1) * sizeof(ast_ *));
+    for (size_t i = 0; i < if_body_size; i++)
+    {
+      copy->if_body[i] = deep_copy(original->if_body[i]);
+    }
+    copy->if_body[if_body_size] = NULL;
+  }
+
+  if (original->else_if_conditions)
+  {
+    size_t else_if_size = 0;
+    while (original->else_if_conditions[else_if_size] != NULL)
+    {
+      else_if_size++;
+    }
+
+    copy->else_if_conditions = malloc((else_if_size + 1) * sizeof(ast_ *));
+    for (size_t i = 0; i < else_if_size; i++)
+    {
+      copy->else_if_conditions[i] = deep_copy(original->else_if_conditions[i]);
+    }
+    copy->else_if_conditions[else_if_size] = NULL;
+  }
+
+  if (original->else_if_bodies)
+  {
+    size_t else_if_bodies_size = 0;
+    while (original->else_if_bodies[else_if_bodies_size] != NULL)
+    {
+      else_if_bodies_size++;
+    }
+
+    copy->else_if_bodies = malloc((else_if_bodies_size + 1) * sizeof(ast_ **));
+    for (size_t i = 0; i < else_if_bodies_size; i++)
+    {
+      size_t body_size = 0;
+      while (original->else_if_bodies[i][body_size] != NULL)
+      {
+        body_size++;
+      }
+
+      copy->else_if_bodies[i] = malloc((body_size + 1) * sizeof(ast_ *));
+      for (size_t j = 0; j < body_size; j++)
+      {
+        copy->else_if_bodies[i][j] = deep_copy(original->else_if_bodies[i][j]);
+      }
+      copy->else_if_bodies[i][body_size] = NULL;
+    }
+  }
+
+  if (original->else_body)
+  {
+    size_t else_body_size = 0;
+    while (original->else_body[else_body_size] != NULL)
+    {
+      else_body_size++;
+    }
+
+    copy->else_body = malloc((else_body_size + 1) * sizeof(ast_ *));
+    for (size_t i = 0; i < else_body_size; i++)
+    {
+      copy->else_body[i] = deep_copy(original->else_body[i]);
+    }
+    copy->else_body[else_body_size] = NULL;
+  }
+
+  return copy;
+}
+
 // Function to convert an AST type to a string representation.
 const char *ast_type_to_string(enum ast_type type)
 {

@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
 
         // Initialize components
         lexer_ *lexer = init_lexer(file_contents);
-        parser_ *parser = init_parser(lexer);
         scope_ *scope = init_scope();
+        parser_ *parser = init_parser(lexer, scope);
         interpreter_ *interpreter = init_interpreter();
 
         // Parse and interpret
@@ -54,8 +54,8 @@ int main(int argc, char *argv[])
 
       // Initialize components for REPL mode
       lexer_ *lexer = init_lexer(input);
-      parser_ *parser = init_parser(lexer);
       scope_ *scope = init_scope();
+      parser_ *parser = init_parser(lexer, scope);
       interpreter_ *interpreter = init_interpreter();
 
       // Parse and interpret user input

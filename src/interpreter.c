@@ -261,13 +261,13 @@ ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
   node->rhs = rhs_value; // Update the right-hand side with the processed value
 
   // Add the variable to the scope
-  scope_add_variable_definition(node->scope, node);
+  scope_add_variable_definition(get_scope(node), node);
 
   return node;
 }
 ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node)
 {
-  ast_ *vdef = scope_get_variable_definition(node->scope, node->variable_name);
+  ast_ *vdef = scope_get_variable_definition(get_scope(node), node->variable_name);
 
   if (vdef != NULL)
   {
@@ -285,7 +285,7 @@ ast_ *interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
 }
 ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 {
-  ast_ *array = scope_get_variable_definition(node->scope, node->variable_name);
+  ast_ *array = scope_get_variable_definition(get_scope(node), node->variable_name);
 
   if (!array)
   {
@@ -340,7 +340,7 @@ ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
 {
   // Use scope_get_instantiation_definition to find the record definition
-  ast_ *inst_definition = scope_get_instantiation_definition(node->scope, node->class_name);
+  ast_ *inst_definition = scope_get_instantiation_definition(get_scope(node), node->class_name);
 
   if (!inst_definition)
   {
@@ -437,30 +437,36 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
   }
   else if (inst_definition->type == AST_SUBROUTINE)
   {
-
-    // Assign the arguments to the subroutine's parameters
+    ast_ *inst_definition_copy = deep_copy(inst_definition);
+    scope_ *local_scope = init_scope();
+    // Assign the arguments to the subroutine's parameters within this new scope
     for (int i = 0; i < node->arguments_count; i++)
     {
       ast_ *var = init_ast(AST_ASSIGNMENT);
       var->lhs = init_ast(AST_VARIABLE);
-      var->lhs->variable_name = inst_definition->parameters[i]->variable_name;
-      var->rhs = node->arguments[i];
-      scope_add_variable_definition(inst_definition->scope, var);
+      var->lhs->variable_name = strdup(inst_definition_copy->parameters[i]->variable_name);
+      var->rhs = init_ast(node->arguments[i]->type);
+      *var->rhs = *node->arguments[i];
+
+      // Add the variable to the subroutine-specific scope
+      scope_add_variable_definition(local_scope, var);
     }
 
-    for (int i = 0; inst_definition->body[i] != NULL; i++)
+    // Process the function body within this new scope
+    for (int i = 0; inst_definition_copy->body[i] != NULL; i++)
     {
-      ast_ *current_statement = inst_definition->body[i];
+      ast_ *current_statement = inst_definition_copy->body[i];
+      set_scope(current_statement, local_scope);
 
       if (current_statement->type == AST_RETURN)
       {
-        // Return the processed value of the return statement
         return interpreter_process(interpreter, current_statement);
       }
 
       interpreter_process(interpreter, current_statement);
     }
   }
+
   return init_ast(AST_NOOP);
 }
 ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ *node)
@@ -601,6 +607,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
 
 ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *node)
 {
+
   ast_ *left_val = NULL;
   ast_ *right_val = NULL;
 
@@ -742,18 +749,16 @@ ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *no
 
 ast_ *interpreter_process_record_definition(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> record definition <<\n");
   scope_add_instantiation_definition(
-      node->scope,
+      get_scope(node),
       node);
 
   return node;
 }
 ast_ *interpreter_process_subroutine(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> subroutine <<\n");
   scope_add_instantiation_definition(
-      node->scope,
+      get_scope(node),
       node);
 
   return node;

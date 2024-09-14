@@ -1,39 +1,23 @@
-RECORD Car
-  make : String
-  model : String
-  reg : String
-  price : Real
-  noOfDoors : Integer
-ENDRECORD
-
-myCar1 <- Car('Ford', 'Focus', 'DX17 GYT', 1399.99, 5)
-myCar2 <- Car('Hyundai', 'i10', 'MJ67 KYU', 100.00, 5)
-myCar3 <- Car('Volkswagen', 'Lupo', 'HA44 YLI', 1399.99, 5)
-
-OUTPUT myCar1
-OUTPUT myCar2
-OUTPUT myCar3
-
-SUBROUTINE showAdd(a,b)
+SUBROUTINE showAdd(a, b)
   result <- a + b
   OUTPUT result
 ENDSUBROUTINE
 
-SUBROUTINE helloWorld()
-  OUTPUT "Hello World!"
+SUBROUTINE sayHi()
+  OUTPUT "Hi"
 ENDSUBROUTINE
 
-SUBROUTINE add(a,b)
+SUBROUTINE add(a, b)
   result <- a + b
   RETURN result
 ENDSUBROUTINE
 
 showAdd(2,3)
-showAdd(1,1)
-showAdd(2,2)
+showAdd("Hello", "World!")
 
-helloWorld()
+sayHi()
 
-OUTPUT add("hello","world!")
-OUTPUT add("a","b")
-OUTPUT add(1,1)
+addition <- add(2,3)
+OUTPUT addition
+concat <- add("Hello", "World!")
+OUTPUT concat
