@@ -570,25 +570,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
     parser_expect(parser, TOKEN_ID); // Consume 'IN'
 
     // Parse the collection expression (could be a string, array, etc.)
-    loop_ast->collection_expr = parse_expression(parser, scope);
-
-    if (loop_ast->collection_expr->type == AST_STRING)
-    {
-      loop_ast->loop_variable->rhs = init_ast(AST_CHARACTER);
-      loop_ast->loop_variable->rhs->char_value.value = loop_ast->collection_expr->string_value[0];
-      loop_ast->loop_variable->rhs->char_value.null = 0; // Default to the first character of the string
-    }
-    else if (loop_ast->collection_expr->type == AST_ARRAY)
-    {
-      loop_ast->loop_variable->rhs = init_ast(loop_ast->collection_expr->array_elements[0]->type);
-      loop_ast->loop_variable->rhs->int_value.value = 0;
-      loop_ast->loop_variable->rhs->int_value.null = 0; // Default to the first index of the array
-    }
-    else
-    {
-      fprintf(stderr, "Error: Collection expression must be a string or array.\n");
-      exit(1);
-    }
+    loop_ast->collection_expr = parser_parse_statement(parser, scope);
   }
   else
   {

@@ -1,14 +1,5 @@
 # Todo List
 
-## Thoughts
-
-- [ ] Implement BODMAS (operation precedence) for arithmetic expressions
-- [ ] Allow USERINPUT to be parsed as an expression rather than a string
-- [ ] Add EXIT keyword for programatic use and also REPL mode
-- [ ] Add multi nesting of records
-- [ ] Add default values in record fields
-- [x] Printing of arrays and records
-
 ## Comments
 
 - [x] Single line comments
@@ -48,7 +39,7 @@
 
 ### Definite Iteration
 
-- [ ] For-to iteration
+- [x] For-to iteration
 - [ ] For-in iteration
 
 ## Selection
@@ -75,33 +66,42 @@
 
 ## Subroutines
 
-- [ ] Subroutine definition
-- [ ] Subroutine return values
-- [ ] Calling subroutines
+- [x] Subroutine definition
+- [x] Subroutine return values
+- [x] Calling subroutines
 
 ## Built-in Functions
 
 ### Arrays & Strings
 
-- [ ] LEN() - Length of array or string
-- [ ] POSITION() - Position of element in array or string
-- [ ] SUBSTRING() - Extract substring from string
-- [ ] SLICE() - Extract subarray from array
+- [x] LEN() - Length of array or string
+- [x] POSITION() - Position of element in array or string
+- [x] SUBSTRING() - Extract substring from string
+- [x] SLICE() - Extract subarray from array
 
 ### Conversion
 
-- [ ] String to Int
-- [ ] String to Real
-- [ ] Int to String
-- [ ] Real to String
-- [ ] Char to Code
-- [ ] Code to Char
+- [x] String to Int
+- [x] String to Real
+- [x] Int to String
+- [x] Real to String
+- [x] Char to Code
+- [x] Code to Char
 
 ### Random Number Generation
 
-- [ ] Generate random numbers within a range
+- [x] Generate random numbers within a range
 
 ## Input & Output
 
 - [x] USERINPUT assignment to variables
 - [x] OUTPUT variable to standard output
+
+## Desirable Additions
+
+- [ ] Implement BODMAS (operation precedence) for arithmetic expressions
+- [ ] Allow USERINPUT to be parsed as an expression rather than a string
+- [ ] Add EXIT keyword for programatic use and also REPL mode
+- [ ] Add multi nesting of records
+- [ ] Add default values in record fields
+- [x] Printing of arrays and records
