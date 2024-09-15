@@ -40,7 +40,7 @@
 ### Definite Iteration
 
 - [x] For-to iteration
-- [ ] For-in iteration
+- [x] For-in iteration
 
 ## Selection
 
@@ -56,7 +56,7 @@
 - [x] Array assignment
 - [ ] Array access
 - [x] Multi dimensional arrays
-- [ ] For-in iteration over arrays
+- [x] For-in iteration over arrays
 
 ## Records
 
