@@ -1265,57 +1265,112 @@ ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
 {
-  // 1. Process the end expression (loop condition)
-  ast_ *end = interpreter_process(interpreter, node->end_expr);
-  if (end->type != AST_INTEGER || end->int_value.null == 1)
+  if (node->collection_expr != NULL)
   {
-    fprintf(stderr, "Error: End expression could not be recognized as a integer\n");
-    return init_ast(AST_NOOP);
-  }
+    // FOR-IN loop
+    ast_ *collection = interpreter_process(interpreter, node->collection_expr);
 
-  // 2. Process the step expression
-  ast_ *step = interpreter_process(interpreter, node->step_expr);
-  if (step->type != AST_INTEGER || step->int_value.null == 1)
-  {
-    fprintf(stderr, "Error: Step expression could not be recognized as a integer\n");
-    return init_ast(AST_NOOP);
-  }
-
-  scope_ *local_scope = init_scope(node->scope);
-  scope_add_variable_definition(local_scope, node->loop_variable);
-
-  if (node->loop_variable->rhs->int_value.value <= end->int_value.value)
-  {
-    // 4. Loop through [loop_variable_value, end_value] using step_value
-    while (node->loop_variable->rhs->int_value.value <= end->int_value.value)
+    // Check if collection is either a string or an array
+    if (collection->type == AST_STRING)
     {
-      for (int i = 0; node->loop_body[i] != NULL; i++)
+      // Iterate over string characters
+      int length = strlen(collection->string_value);
+      scope_ *local_scope = init_scope(node->scope);
+
+      for (int i = 0; i < length; i++)
       {
-        ast_ *current_statement = node->loop_body[i];
-        set_scope(current_statement, local_scope);
+        // Set loop variable to the current character
+        node->loop_variable->rhs = init_ast(AST_STRING);
+        node->loop_variable->rhs->string_value = (char *)malloc(2);
+        node->loop_variable->rhs->string_value[0] = collection->string_value[i];
+        node->loop_variable->rhs->string_value[1] = '\0'; // Null-terminate
 
-        interpreter_process(interpreter, current_statement);
+        scope_add_variable_definition(local_scope, node->loop_variable);
+
+        // Execute the loop body
+        for (int j = 0; node->loop_body[j] != NULL; j++)
+        {
+          ast_ *current_statement = node->loop_body[j];
+          set_scope(current_statement, local_scope);
+          interpreter_process(interpreter, current_statement);
+        }
       }
+    }
+    else if (collection->type == AST_ARRAY)
+    {
+      // Iterate over array elements
+      int array_size = collection->array_size;
+      scope_ *local_scope = init_scope(node->scope);
 
-      // 6. Increment the loop variable by the step value
-      node->loop_variable->rhs->int_value.value += step->int_value.value;
-      scope_add_variable_definition(local_scope, node->loop_variable);
+      for (int i = 0; i < array_size; i++)
+      {
+        // Set loop variable to the current array element
+        node->loop_variable->rhs = collection->array_elements[i];
+        scope_add_variable_definition(local_scope, node->loop_variable);
+
+        // Execute the loop body
+        for (int j = 0; node->loop_body[j] != NULL; j++)
+        {
+          ast_ *current_statement = node->loop_body[j];
+          set_scope(current_statement, local_scope);
+          interpreter_process(interpreter, current_statement);
+        }
+      }
+    }
+    else
+    {
+      fprintf(stderr, "Error: Collection type not supported in FOR-IN loop\n");
+      return init_ast(AST_NOOP);
     }
   }
   else
   {
-    // 4. Loop through [loop_variable_value, end_value] using step_value
-    while (node->loop_variable->rhs->int_value.value >= end->int_value.value)
+    // FOR variable <- start TO end [STEP step] logic
+
+    // Process the end expression
+    ast_ *end = interpreter_process(interpreter, node->end_expr);
+    if (end->type != AST_INTEGER || end->int_value.null == 1)
     {
+      fprintf(stderr, "Error: End expression could not be recognized as an integer\n");
+      return init_ast(AST_NOOP);
+    }
+
+    // Process the step expression, default to 1 if not specified
+    ast_ *step;
+    if (node->step_expr != NULL)
+    {
+      step = interpreter_process(interpreter, node->step_expr);
+    }
+    else
+    {
+      step = init_ast(AST_INTEGER);
+      step->int_value.value = 1;
+      step->int_value.null = 0;
+    }
+
+    if (step->type != AST_INTEGER || step->int_value.null == 1)
+    {
+      fprintf(stderr, "Error: Step expression could not be recognized as an integer\n");
+      return init_ast(AST_NOOP);
+    }
+
+    // Initialize the local scope and the loop variable
+    scope_ *local_scope = init_scope(node->scope);
+    scope_add_variable_definition(local_scope, node->loop_variable);
+
+    // Loop based on the step direction (positive or negative)
+    while ((step->int_value.value > 0 && node->loop_variable->rhs->int_value.value <= end->int_value.value) ||
+           (step->int_value.value < 0 && node->loop_variable->rhs->int_value.value >= end->int_value.value))
+    {
+      // Execute the loop body
       for (int i = 0; node->loop_body[i] != NULL; i++)
       {
         ast_ *current_statement = node->loop_body[i];
         set_scope(current_statement, local_scope);
-
         interpreter_process(interpreter, current_statement);
       }
 
-      // 6. Increment the loop variable by the step value
+      // Increment (or decrement) the loop variable by the step value
       node->loop_variable->rhs->int_value.value += step->int_value.value;
       scope_add_variable_definition(local_scope, node->loop_variable);
     }
