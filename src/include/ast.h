@@ -137,6 +137,7 @@ typedef struct AST_STRUCT
 
     /* AST_INDEFINITE_LOOP */
     struct AST_STRUCT *condition;  // Condition to evaluate for the loop (e.g., "a < 4")
+    int indefinite_loop_type;
     struct AST_STRUCT **loop_body; // Body of the loop (list of statements)
 
     /* AST_SELECTION */

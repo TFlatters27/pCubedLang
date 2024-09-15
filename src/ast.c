@@ -51,6 +51,7 @@ ast_ *init_ast(enum ast_type type)
   ast->step_expr = NULL;
   ast->collection_expr = NULL;
   ast->condition = NULL;
+  ast->indefinite_loop_type = 0;
   ast->loop_body = NULL;
   ast->if_condition = NULL;
   ast->if_body = NULL;
@@ -838,6 +839,8 @@ void print_ast(ast_ *node, int indent)
     }
     break;
   case AST_INDEFINITE_LOOP:
+    print_indent(indent);
+    printf("Indefinite Loop Type %s\n", node->indefinite_loop_type ? "WHILE" : "REPEAT");
     print_indent(indent);
     printf("Indefinite Loop Condition:\n");
     if (node->condition)

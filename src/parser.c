@@ -462,6 +462,7 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
   // Determine if it's a REPEAT...UNTIL loop or a WHILE...ENDWHILE loop
   if (strcmp(parser->current_token->value, "REPEAT") == 0)
   {
+    loop_ast->indefinite_loop_type = 0;
     parser_expect(parser, TOKEN_ID); // Consume 'REPEAT'
 
     parser_expect(parser, TOKEN_NEWLINE); // Consume the newline after the REPEAT statement
@@ -485,6 +486,7 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
   else if (strcmp(parser->current_token->value, "WHILE") == 0)
   {
     parser_expect(parser, TOKEN_ID); // Consume 'WHILE'
+    loop_ast->indefinite_loop_type = 1;
 
     // Parse the condition expression after 'WHILE'
     loop_ast->condition = parse_expression(parser, scope);

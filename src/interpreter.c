@@ -314,13 +314,18 @@ ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
 {
   // Process right-hand side before storing in scope
   ast_ *rhs_value = interpreter_process(interpreter, node->rhs);
-  node->rhs = rhs_value; // Update the right-hand side with the processed value
 
-  // Add the variable to the scope
-  scope_add_variable_definition(get_scope(node), node);
+  // Create a new node for assignment, keeping the original node intact
+  ast_ *new_assignment = init_ast(AST_ASSIGNMENT);
+  new_assignment->lhs = node->lhs; // Keep the left-hand side (variable) the same
+  new_assignment->rhs = rhs_value; // Use the processed right-hand side value
 
-  return node;
+  // Add the variable and its value to the scope
+  scope_add_variable_definition(get_scope(node), new_assignment);
+
+  return new_assignment; // Return the new assignment node
 }
+
 ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node)
 {
   ast_ *vdef = scope_get_variable_definition(get_scope(node), node->variable_name);
@@ -1260,13 +1265,7 @@ ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> definite_loop <<\n");
-
-  // 1. Process the loop variable (initialization)
-  // FIX: might need to check which scope this variable is added to
-  scope_add_variable_definition(node->scope, node->loop_variable);
-
-  // 2. Process the end expression (loop condition)
+  // 1. Process the end expression (loop condition)
   ast_ *end = interpreter_process(interpreter, node->end_expr);
   if (end->type != AST_INTEGER || end->int_value.null == 1)
   {
@@ -1274,13 +1273,16 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     return init_ast(AST_NOOP);
   }
 
-  // 3. Process the step expression
+  // 2. Process the step expression
   ast_ *step = interpreter_process(interpreter, node->step_expr);
   if (step->type != AST_INTEGER || step->int_value.null == 1)
   {
     fprintf(stderr, "Error: Step expression could not be recognized as a integer\n");
     return init_ast(AST_NOOP);
   }
+
+  scope_ *local_scope = init_scope(node->scope);
+  scope_add_variable_definition(local_scope, node->loop_variable);
 
   if (node->loop_variable->rhs->int_value.value <= end->int_value.value)
   {
@@ -1290,14 +1292,14 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
       for (int i = 0; node->loop_body[i] != NULL; i++)
       {
         ast_ *current_statement = node->loop_body[i];
-        set_scope(current_statement, node->scope);
+        set_scope(current_statement, local_scope);
 
         interpreter_process(interpreter, current_statement);
       }
 
       // 6. Increment the loop variable by the step value
       node->loop_variable->rhs->int_value.value += step->int_value.value;
-      scope_add_variable_definition(node->scope, node->loop_variable);
+      scope_add_variable_definition(local_scope, node->loop_variable);
     }
   }
   else
@@ -1308,14 +1310,14 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
       for (int i = 0; node->loop_body[i] != NULL; i++)
       {
         ast_ *current_statement = node->loop_body[i];
-        set_scope(current_statement, node->scope);
+        set_scope(current_statement, local_scope);
 
         interpreter_process(interpreter, current_statement);
       }
 
       // 6. Increment the loop variable by the step value
       node->loop_variable->rhs->int_value.value += step->int_value.value;
-      scope_add_variable_definition(node->scope, node->loop_variable);
+      scope_add_variable_definition(local_scope, node->loop_variable);
     }
   }
 

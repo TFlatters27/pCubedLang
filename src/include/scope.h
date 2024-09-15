@@ -9,8 +9,7 @@ typedef struct SCOPE_STRUCT
 
 } scope_;
 
-scope_ *init_scope();
-
+scope_ *init_scope(scope_ *parent_scope);
 void set_scope(ast_ *node, scope_ *scope);
 
 scope_ *get_scope(ast_ *node);

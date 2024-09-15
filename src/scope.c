@@ -30,7 +30,7 @@ int is_builtin_method(const char *name)
   return 0; // No match
 }
 
-scope_ *init_scope()
+scope_ *init_scope(scope_ *parent_scope)
 {
   scope_ *scope = calloc(1, sizeof(struct SCOPE_STRUCT));
   if (!scope)
@@ -39,9 +39,32 @@ scope_ *init_scope()
     exit(1);
   }
 
-  // Initialize empty lists for subroutines, variables, and records
-  scope->instantiation_definitions = init_ast_list();
-  scope->variable_definitions = init_ast_list();
+  if (parent_scope)
+  {
+    // Initialize lists from parent scope and copy elements
+    scope->instantiation_definitions = init_ast_list();
+    scope->variable_definitions = init_ast_list();
+
+    // Copy parent instantiation_definitions list
+    for (size_t i = 0; parent_scope->instantiation_definitions[i] != NULL; i++)
+    {
+      add_ast_to_list(&scope->instantiation_definitions, parent_scope->instantiation_definitions[i]);
+    }
+
+    // Copy parent variable_definitions list
+    for (size_t i = 0; parent_scope->variable_definitions[i] != NULL; i++)
+    {
+      add_ast_to_list(&scope->variable_definitions, parent_scope->variable_definitions[i]);
+    }
+    // printf("Created new scope %p from parent scope %p\n", scope, parent_scope);
+  }
+  else
+  {
+    // Initialize empty lists
+    scope->instantiation_definitions = init_ast_list();
+    scope->variable_definitions = init_ast_list();
+    // printf("Created new scope %p\n", scope);
+  }
 
   return scope;
 }
@@ -370,6 +393,7 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
       }
 
       // Overwrite the existing variable definition
+      // printf("Overwriting variable '%s' in scope %p\n", new_var_name, scope);
       scope->variable_definitions[i]->lhs = vdef->lhs;
       scope->variable_definitions[i]->rhs = vdef->rhs;
       return scope->variable_definitions[i]; // Return the overwritten variable
@@ -399,6 +423,7 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
 
   // If no existing variable was found, add the new definition to the list
   add_ast_to_list(&scope->variable_definitions, vdef);
+  // printf("Adding variable %s to scope %p\n", vdef->lhs->variable_name, scope);
 
   return vdef;
 }
@@ -415,10 +440,11 @@ ast_ *scope_get_variable_definition(scope_ *scope, const char *vname)
   {
     if (strcmp(scope->variable_definitions[i]->lhs->variable_name, vname) == 0)
     {
+      // printf("Found variable %s in scope %p with value %d\n", vname, scope, scope->variable_definitions[i]->rhs->int_value.value);
       return scope->variable_definitions[i]->rhs;
     }
   }
 
-  fprintf(stderr, "Error: Variable definition not found in scope.\n");
+  fprintf(stderr, "Error: Variable definition `%s` not found in scope %p.\n", vname, scope);
   exit(1); // Variable not found
 }

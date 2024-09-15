@@ -8,9 +8,6 @@ FOR a <- 1 TO 3
 ENDFOR
 #should output 1,4,9
 
-OUTPUT "a",a # should error since out of scope
-OUTPUT "result",result # should error since out of scope
-
 FOR a <- 1 TO 5 STEP 2
   OUTPUT a
 ENDFOR
