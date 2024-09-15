@@ -2,6 +2,34 @@
 #include <stdio.h>
 #include <string.h>
 
+// Assuming a list of built-in method names
+const char *builtin_methods[] = {
+    "LEN",
+    "POSITION",
+    "SUBSTRING",
+    "SLICE",
+    "STRING_TO_INT",
+    "STRING_TO_REAL",
+    "INT_TO_STRING",
+    "REAL_TO_STRING",
+    "CHAR_TO_CODE",
+    "CODE_TO_CHAR",
+    "RANDOM_INT",
+    NULL // End of the list marker
+};
+
+int is_builtin_method(const char *name)
+{
+  for (size_t i = 0; builtin_methods[i] != NULL; i++)
+  {
+    if (strcmp(name, builtin_methods[i]) == 0)
+    {
+      return 1; // Match found
+    }
+  }
+  return 0; // No match
+}
+
 scope_ *init_scope()
 {
   scope_ *scope = calloc(1, sizeof(struct SCOPE_STRUCT));
@@ -227,6 +255,18 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
     {
       fprintf(stderr, "Error: Invalid instantiation definition type.\n");
     }
+    exit(1);
+  }
+
+  // Check if the record_name or subroutine_name matches a built-in method
+  if (idef->type == AST_RECORD_DEFINITION && is_builtin_method(idef->record_name))
+  {
+    fprintf(stderr, "Error: Record '%s' conflicts with a built-in method name.\n", idef->record_name);
+    exit(1);
+  }
+  else if (idef->type == AST_SUBROUTINE && is_builtin_method(idef->subroutine_name))
+  {
+    fprintf(stderr, "Error: Subroutine '%s' conflicts with a built-in method name.\n", idef->subroutine_name);
     exit(1);
   }
 

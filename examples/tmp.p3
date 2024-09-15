@@ -1,24 +1,33 @@
-SUBROUTINE showAdd(a, b)
-  result <- a + b
-  OUTPUT result
-ENDSUBROUTINE
+array <- [1,2,3]
+matrix <- [[1,2], [3,4], [5,6], [7,8]]
+string <- "Bonjour"
 
-test <- "Testing 1.. 2... 3..."
-SUBROUTINE sayHi()
-  OUTPUT test
-ENDSUBROUTINE
+len1 <- LEN(array) # returns 3
+OUTPUT "length of array: ", len1
+len2 <- LEN(matrix) # returns 4
+OUTPUT "length of matrix: ",len2
+len3 <- LEN(string) # returns 7
+OUTPUT "length of string: ",len3
 
-SUBROUTINE add(a, b)
-  result <- a + b
-  RETURN result
-ENDSUBROUTINE
+pos1 <- POSITION(array, 2) # returns 1
+OUTPUT "position of 2 in array: ", pos1
+pos2 <- POSITION(matrix, [3,4]) # returns 2
+OUTPUT "position of [3,4] in matrix: ", pos2
+pos3 <- POSITION(string, 'j') # returns 3
+OUTPUT "position of j in string: ", pos3
 
-showAdd(2,3)
-showAdd("Hello", "World!")
+substring <- SUBSTRING("computer science", 2, 9) # return "Bon"
+OUTPUT substring
 
-sayHi()
+slice1 <- SLICE(array, 1, 2) # returns [2,3]
+OUTPUT slice1
+slice2 <- SLICE(matrix, 2, 3) # returns [[5,6], [7,8]]
+OUTPUT slice2
 
-addition <- add(2,3) * 3
-OUTPUT addition
-concat <- add("Goodbye", "Universe!")
-OUTPUT concat
+OUTPUT STRING_TO_INT("16") # returns 16
+OUTPUT STRING_TO_REAL("16.3") # returns 16.3
+OUTPUT INT_TO_STRING(16) # returns "16"
+OUTPUT REAL_TO_STRING(16.3) # returns "16.3"
+OUTPUT CHAR_TO_CODE('a') # returns 97
+OUTPUT CODE_TO_CHAR(97) # returns 'a'
+OUTPUT RANDOM_INT(1, 6) # return random number between 1 and 6
