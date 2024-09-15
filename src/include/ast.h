@@ -130,10 +130,9 @@ typedef struct AST_STRUCT
     struct AST_STRUCT **output_expressions; // List of expressions to be output
 
     /* AST_DEFINITE_LOOP */
-    struct AST_STRUCT *loop_variable;   // Variable being iterated
-    struct AST_STRUCT *start_expr;      // Start expression (if FOR <var> <- start TO end [STEP step])
     struct AST_STRUCT *end_expr;        // End expression (if FOR <var> <- start TO end [STEP step])
     struct AST_STRUCT *step_expr;       // Step expression (if any)
+    struct AST_STRUCT *loop_variable;   // Assignment AST with var <- start or var <- collection[0]
     struct AST_STRUCT *collection_expr; // Collection to iterate over (if FOR <var> IN collection)
 
     /* AST_INDEFINITE_LOOP */

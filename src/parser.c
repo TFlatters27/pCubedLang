@@ -32,9 +32,7 @@ void parser_expect(parser_ *parser, enum token_type expected_type)
   else
   {
     fprintf(
-        stderr, "Error: Found unexpected token `%s::%s` at line %d, column %d. Expected token: `%s`.\n",
-        token_type_to_string(parser->prev_token->type), parser->prev_token->value,
-        parser->lexer->line, parser->lexer->column, token_type_to_string(expected_type));
+        stderr, "Error: Found unexpected token `%s` : %s\n", token_type_to_string(parser->current_token->type), parser->current_token->value);
     exit(1);
   }
 }
@@ -519,8 +517,9 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   parser_expect(parser, TOKEN_ID); // Consume the 'FOR' token
 
   // Handle the loop variable
-  loop_ast->loop_variable = init_ast(AST_VARIABLE);
-  loop_ast->loop_variable->variable_name = parser->current_token->value;
+  loop_ast->loop_variable = init_ast(AST_ASSIGNMENT);
+  loop_ast->loop_variable->lhs = init_ast(AST_VARIABLE);
+  loop_ast->loop_variable->lhs->variable_name = parser->current_token->value;
   parser_expect(parser, TOKEN_ID); // Consume the loop variable
 
   // Determine if it's a "FOR variable IN collection" or "FOR variable <- start TO end"
@@ -531,14 +530,15 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
     parser_expect(parser, TOKEN_ASSIGNMENT); // Consume '<-'
 
     // Parse the start expression
-    loop_ast->start_expr = parse_expression(parser, scope);
+    ast_ *start_expr = parse_expression(parser, scope); // Temporary local variable
+    loop_ast->loop_variable->rhs = start_expr;
 
     // Expect and consume the "TO" keyword
     if (strcmp(parser->current_token->value, "TO") == 0)
     {
       parser_expect(parser, TOKEN_ID); // Consume 'TO'
 
-      // Parse the end expression
+      // Parse the end expression and assign it to the loop AST
       loop_ast->end_expr = parse_expression(parser, scope);
     }
     else
@@ -569,6 +569,24 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
 
     // Parse the collection expression (could be a string, array, etc.)
     loop_ast->collection_expr = parse_expression(parser, scope);
+
+    if (loop_ast->collection_expr->type == AST_STRING)
+    {
+      loop_ast->loop_variable->rhs = init_ast(AST_CHARACTER);
+      loop_ast->loop_variable->rhs->char_value.value = loop_ast->collection_expr->string_value[0];
+      loop_ast->loop_variable->rhs->char_value.null = 0; // Default to the first character of the string
+    }
+    else if (loop_ast->collection_expr->type == AST_ARRAY)
+    {
+      loop_ast->loop_variable->rhs = init_ast(loop_ast->collection_expr->array_elements[0]->type);
+      loop_ast->loop_variable->rhs->int_value.value = 0;
+      loop_ast->loop_variable->rhs->int_value.null = 0; // Default to the first index of the array
+    }
+    else
+    {
+      fprintf(stderr, "Error: Collection expression must be a string or array.\n");
+      exit(1);
+    }
   }
   else
   {
@@ -581,15 +599,18 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   // Parse the loop body
   loop_ast->loop_body = init_ast_list(); // Initialize the loop body list
 
-  while (strcmp(parser->current_token->value, "ENDFOR") != 0)
+  do
   {
-    ast_ *statement = parser_parse_statement(parser, scope);
+    ast_ *statement = parser_parse_statement(parser, get_scope(loop_ast));
     add_ast_to_list(&(loop_ast->loop_body), statement); // Add each statement to the loop body
-    parser_expect(parser, TOKEN_NEWLINE);               // Consume the newline after each statement
-  }
+    if (parser->current_token->type == TOKEN_NEWLINE)
+    {
+      parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
+    }
+  } while (strcmp(parser->current_token->value, "ENDFOR") != 0);
 
   parser_expect(parser, TOKEN_ID); // Consume 'ENDFOR'
-  set_scope(loop_ast, scope);
+
   return loop_ast;
 }
 

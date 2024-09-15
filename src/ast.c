@@ -47,7 +47,6 @@ ast_ *init_ast(enum ast_type type)
   ast->return_value = NULL;
   ast->output_expressions = NULL;
   ast->loop_variable = NULL;
-  ast->start_expr = NULL;
   ast->end_expr = NULL;
   ast->step_expr = NULL;
   ast->collection_expr = NULL;
@@ -145,7 +144,6 @@ ast_ *deep_copy(ast_ *original)
   copy->right = deep_copy(original->right);
   copy->return_value = deep_copy(original->return_value);
   copy->loop_variable = deep_copy(original->loop_variable);
-  copy->start_expr = deep_copy(original->start_expr);
   copy->end_expr = deep_copy(original->end_expr);
   copy->step_expr = deep_copy(original->step_expr);
   copy->collection_expr = deep_copy(original->collection_expr);
@@ -473,7 +471,7 @@ int valid(ast_ *ast)
     break;
 
   case AST_DEFINITE_LOOP:
-    if (ast->loop_variable != NULL || ast->start_expr != NULL || ast->end_expr != NULL || ast->step_expr != NULL || ast->collection_expr != NULL)
+    if (ast->loop_variable != NULL || ast->end_expr != NULL || ast->step_expr != NULL || ast->collection_expr != NULL)
       return 0;
     break;
 
@@ -818,12 +816,6 @@ void print_ast(ast_ *node, int indent)
       print_indent(indent + 1);
       printf("Collection Variable:\n");
       print_ast(node->collection_expr, indent + 2);
-    }
-    if (node->start_expr)
-    {
-      print_indent(indent + 1);
-      printf("Start Expression:\n");
-      print_ast(node->start_expr, indent + 2);
     }
     if (node->end_expr)
     {

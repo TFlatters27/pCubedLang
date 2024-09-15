@@ -947,13 +947,17 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
   {
     if (right_val->type == AST_INTEGER)
     {
-      right_val->int_value.value = -(right_val->int_value.value);
-      return right_val;
+      ast_ *result = init_ast(AST_INTEGER);
+      result->int_value.value = -(right_val->int_value.value);
+      result->int_value.null = 0;
+      return result;
     }
     else if (right_val->type == AST_REAL)
     {
-      right_val->real_value.value = -(right_val->real_value.value);
-      return right_val;
+      ast_ *result = init_ast(AST_REAL);
+      result->real_value.value = -(right_val->real_value.value);
+      result->real_value.null = 0;
+      return result;
     }
   }
 
@@ -967,81 +971,105 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
     }
     else if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
-      left_val->int_value.value += right_val->int_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_INTEGER);
+      result->int_value.value = left_val->int_value.value + right_val->int_value.value;
+      result->int_value.null = 0;
+      return result;
     }
     else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
-      left_val->real_value.value += right_val->real_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_REAL);
+      result->real_value.value = left_val->real_value.value + right_val->real_value.value;
+      result->real_value.null = 0;
+      return result;
     }
   }
   else if (strcmp(node->op, "-") == 0)
   {
     if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
-      left_val->int_value.value -= right_val->int_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_INTEGER);
+      result->int_value.value = left_val->int_value.value - right_val->int_value.value;
+      result->int_value.null = 0;
+      return result;
     }
     else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
-      left_val->real_value.value -= right_val->real_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_REAL);
+      result->real_value.value = left_val->real_value.value - right_val->real_value.value;
+      result->real_value.null = 0;
+      return result;
     }
   }
   else if (strcmp(node->op, "*") == 0)
   {
     if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
-      left_val->int_value.value *= right_val->int_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_INTEGER);
+      result->int_value.value = left_val->int_value.value * right_val->int_value.value;
+      result->int_value.null = 0;
+      return result;
     }
     else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
-      left_val->real_value.value *= right_val->real_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_REAL);
+      result->real_value.value = left_val->real_value.value * right_val->real_value.value;
+      result->real_value.null = 0;
+      return result;
     }
   }
   else if (strcmp(node->op, "/") == 0)
   {
     if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
-      left_val->int_value.value /= right_val->int_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_INTEGER);
+      result->int_value.value = left_val->int_value.value / right_val->int_value.value;
+      result->int_value.null = 0;
+      return result;
     }
     else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
-      left_val->real_value.value /= right_val->real_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_REAL);
+      result->real_value.value = left_val->real_value.value / right_val->real_value.value;
+      result->real_value.null = 0;
+      return result;
     }
   }
   else if (strcmp(node->op, "^") == 0)
   {
     if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
-      left_val->int_value.value = pow(left_val->int_value.value, right_val->int_value.value);
-      return left_val;
+      ast_ *result = init_ast(AST_INTEGER);
+      result->int_value.value = pow(left_val->int_value.value, right_val->int_value.value);
+      result->int_value.null = 0;
+      return result;
     }
     else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
     {
-      left_val->real_value.value = pow(left_val->real_value.value, right_val->real_value.value);
-      return left_val;
+      ast_ *result = init_ast(AST_REAL);
+      result->real_value.value = pow(left_val->real_value.value, right_val->real_value.value);
+      result->real_value.null = 0;
+      return result;
     }
   }
   else if (strcmp(node->op, "DIV") == 0)
   {
     if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
-      left_val->int_value.value /= right_val->int_value.value; // Integer division
-      return left_val;
+      ast_ *result = init_ast(AST_INTEGER);
+      result->int_value.value = left_val->int_value.value / right_val->int_value.value; // Integer division
+      result->int_value.null = 0;
+      return result;
     }
   }
   else if (strcmp(node->op, "MOD") == 0)
   {
     if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
-      left_val->int_value.value %= right_val->int_value.value;
-      return left_val;
+      ast_ *result = init_ast(AST_INTEGER);
+      result->int_value.value = left_val->int_value.value % right_val->int_value.value;
+      result->int_value.null = 0;
+      return result;
     }
   }
 
@@ -1233,7 +1261,65 @@ ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node)
 ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> definite_loop <<\n");
-  return init_ast(AST_NOOP);
+
+  // 1. Process the loop variable (initialization)
+  // FIX: might need to check which scope this variable is added to
+  scope_add_variable_definition(node->scope, node->loop_variable);
+
+  // 2. Process the end expression (loop condition)
+  ast_ *end = interpreter_process(interpreter, node->end_expr);
+  if (end->type != AST_INTEGER || end->int_value.null == 1)
+  {
+    fprintf(stderr, "Error: End expression could not be recognized as a integer\n");
+    return init_ast(AST_NOOP);
+  }
+
+  // 3. Process the step expression
+  ast_ *step = interpreter_process(interpreter, node->step_expr);
+  if (step->type != AST_INTEGER || step->int_value.null == 1)
+  {
+    fprintf(stderr, "Error: Step expression could not be recognized as a integer\n");
+    return init_ast(AST_NOOP);
+  }
+
+  if (node->loop_variable->rhs->int_value.value <= end->int_value.value)
+  {
+    // 4. Loop through [loop_variable_value, end_value] using step_value
+    while (node->loop_variable->rhs->int_value.value <= end->int_value.value)
+    {
+      for (int i = 0; node->loop_body[i] != NULL; i++)
+      {
+        ast_ *current_statement = node->loop_body[i];
+        set_scope(current_statement, node->scope);
+
+        interpreter_process(interpreter, current_statement);
+      }
+
+      // 6. Increment the loop variable by the step value
+      node->loop_variable->rhs->int_value.value += step->int_value.value;
+      scope_add_variable_definition(node->scope, node->loop_variable);
+    }
+  }
+  else
+  {
+    // 4. Loop through [loop_variable_value, end_value] using step_value
+    while (node->loop_variable->rhs->int_value.value >= end->int_value.value)
+    {
+      for (int i = 0; node->loop_body[i] != NULL; i++)
+      {
+        ast_ *current_statement = node->loop_body[i];
+        set_scope(current_statement, node->scope);
+
+        interpreter_process(interpreter, current_statement);
+      }
+
+      // 6. Increment the loop variable by the step value
+      node->loop_variable->rhs->int_value.value += step->int_value.value;
+      scope_add_variable_definition(node->scope, node->loop_variable);
+    }
+  }
+
+  return init_ast(AST_NOOP); // Return a NOOP after loop execution
 }
 
 ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)

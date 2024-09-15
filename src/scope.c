@@ -140,10 +140,6 @@ void set_scope(ast_ *node, scope_ *scope)
     {
       set_scope(node->collection_expr, scope);
     }
-    if (node->start_expr != NULL)
-    {
-      set_scope(node->start_expr, scope);
-    }
     if (node->end_expr != NULL)
     {
       set_scope(node->end_expr, scope);
