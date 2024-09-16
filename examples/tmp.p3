@@ -1,13 +1,23 @@
-a <- 1
-REPEAT
-  OUTPUT a
-  a <- a + 1
-UNTIL a = 4
-# output 1,2,3
+primes <- [2,3,5,7,11,13]
 
-a <- 1
-WHILE a < 4
-  OUTPUT a
-  a <- a + 1
-ENDWHILE
-# output 1,2,3
+OUTPUT primes # output [2, 3, 5, 7, 11, 13]
+
+OUTPUT primes[5] # output 13
+
+primes[5] <- 17
+
+OUTPUT primes[5] # output 17
+
+OUTPUT primes # output [2, 3, 5, 7, 11, 17]
+
+table <- [[1,2], [2,4], [3,6], [4,8]]
+
+OUTPUT table # output [[1, 2], [2, 4], [3, 6], [4, 8]]
+
+OUTPUT table[3][1] # output 8
+
+table[3][1] <- 16 # makes a copy of the original array and edits the index 3 in parent array and index 1 in child array to contain 16, then stores newly created array where orginal array once was
+
+OUTPUT table[3][1] # output 16
+
+OUTPUT table # output [[1, 2], [2, 4], [3, 6], [4, 16]]

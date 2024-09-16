@@ -272,7 +272,8 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
   case AST_RECORD_ACCESS:
     return interpreter_process_record_access(interpreter, node);
   case AST_ARRAY_ACCESS:
-    return interpreter_process_array_access(interpreter, node);
+    // Use the dereferenced value of the pointer returned by interpreter_process_array_access
+    return *interpreter_process_array_access(interpreter, node); // Dereference the pointer to get the value
   case AST_INSTANTIATION:
     return interpreter_process_instantiation(interpreter, node);
   case AST_ARITHMETIC_EXPRESSION:
@@ -312,13 +313,43 @@ ast_ *interpreter_process_compound(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
 {
-  // Process right-hand side before storing in scope
+  // Process the right-hand side value before assigning it
   ast_ *rhs_value = interpreter_process(interpreter, node->rhs);
 
-  // Create a new node for assignment, keeping the original node intact
+  // Initialize a new AST node for the assignment
   ast_ *new_assignment = init_ast(AST_ASSIGNMENT);
-  new_assignment->lhs = node->lhs; // Keep the left-hand side (variable) the same
-  new_assignment->rhs = rhs_value; // Use the processed right-hand side value
+
+  if (node->lhs->type == AST_ARRAY_ACCESS)
+  {
+    // Use interpreter_process_array_access to fetch the pointer to the target array element
+    ast_ **target_element = interpreter_process_array_access(interpreter, node->lhs);
+
+    // Type-check to ensure the types match before assignment
+    if ((*target_element)->type == rhs_value->type)
+    {
+      *target_element = rhs_value; // Assign the right-hand side value to the target element
+    }
+    else
+    {
+      printf("Error: Type mismatch during array assignment.\n");
+      exit(1);
+    }
+
+    // Assign the modified array to the right-hand side of the assignment node
+    new_assignment->lhs = init_ast(AST_VARIABLE);
+    new_assignment->lhs->variable_name = node->lhs->variable_name;
+    new_assignment->rhs = scope_get_variable_definition(get_scope(node), node->lhs->variable_name); // Reassign the modified array
+  }
+  else if (node->lhs->type == AST_RECORD_ACCESS)
+  {
+    // Handle record access assignment (if needed)
+  }
+  else
+  {
+    // Simple variable assignment
+    new_assignment->lhs = node->lhs; // Keep the left-hand side (variable) the same
+    new_assignment->rhs = rhs_value; // Use the processed right-hand side value
+  }
 
   // Add the variable and its value to the scope
   scope_add_variable_definition(get_scope(node), new_assignment);
@@ -339,13 +370,9 @@ ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node)
   exit(1);
   return init_ast(AST_NOOP);
 }
-ast_ *interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
+ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> record_access <<\n");
-  return init_ast(AST_NOOP);
-}
-ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
-{
+  // Fetch the original array from the scope
   ast_ *array = scope_get_variable_definition(get_scope(node), node->variable_name);
 
   if (!array)
@@ -361,41 +388,57 @@ ast_ *interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
   }
 
   ast_ *current_array = array;
-  int b = 0;
+  int index_count = 0;
 
-  // Iterate over the indices to access nested arrays
-  while (node->index[b] != NULL)
+  // Iterate over the indices to access nested arrays or the target element
+  while (node->index[index_count] != NULL)
   {
-    ast_ *index_value = interpreter_process(interpreter, node->index[b]);
+    ast_ *index_value = interpreter_process(interpreter, node->index[index_count]);
 
     if (index_value->type != AST_INTEGER)
     {
       printf("Error: Array index must be an integer.\n");
       exit(1);
     }
+
     if (index_value->int_value.null == 0)
     {
       int index = index_value->int_value.value;
 
-      // Ensure that current_array is an array and the index is within bounds
+      // Ensure current_array is valid and the index is within bounds
       if (current_array->type != AST_ARRAY || index < 0 || index >= current_array->array_size)
       {
         printf("Error: Array index out of bounds or invalid array access.\n");
         exit(1);
       }
 
-      // Move to the next nested array or value
-      current_array = current_array->array_elements[index];
-      b++;
+      // If this is the last index, return a pointer to the array element
+      if (node->index[index_count + 1] == NULL)
+      {
+        return &current_array->array_elements[index]; // Return pointer to the array element
+      }
+      else
+      {
+        // Move to the next nested array
+        current_array = current_array->array_elements[index];
+      }
     }
     else
     {
       printf("Error: Array index cannot be null.\n");
       exit(1);
     }
+
+    index_count++;
   }
 
-  return current_array;
+  return NULL; // Should not reach here
+}
+
+ast_ *interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
+{
+  printf(">> record_access <<\n");
+  return init_ast(AST_NOOP);
 }
 
 ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)

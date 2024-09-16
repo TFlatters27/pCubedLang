@@ -54,7 +54,7 @@
 ## Arrays
 
 - [x] Array assignment
-- [ ] Array access
+- [x] Array access
 - [x] Multi dimensional arrays
 - [x] For-in iteration over arrays
 
