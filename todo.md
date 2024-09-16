@@ -34,8 +34,8 @@
 
 ### Indefinite Iteration
 
-- [ ] Repeat-until iteration
-- [ ] While iteration
+- [x] Repeat-until iteration
+- [x] While iteration
 
 ### Definite Iteration
 
