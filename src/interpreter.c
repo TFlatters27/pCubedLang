@@ -1381,9 +1381,70 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> indefinite_loop <<\n");
+  // Initialize the local scope
+  scope_ *local_scope = init_scope(node->scope);
+
+  if (node->indefinite_loop_type == 1) // WHILE loop
+  {
+    // Evaluate the condition
+    ast_ *condition = interpreter_process(interpreter, node->condition);
+    if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
+    {
+      fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
+      return init_ast(AST_NOOP);
+    }
+    while ((condition->boolean_value.value))
+    {
+      // Process the loop body
+      for (int i = 0; node->loop_body[i] != NULL; i++)
+      {
+        ast_ *current_statement = node->loop_body[i];
+        set_scope(current_statement, local_scope);
+        interpreter_process(interpreter, current_statement);
+      }
+
+      condition = interpreter_process(interpreter, node->condition);
+      if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
+      {
+        fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
+        return init_ast(AST_NOOP);
+      }
+    }
+  }
+  else if (node->indefinite_loop_type == 0) // REPEAT loop
+  {
+    // Evaluate the condition
+    ast_ *condition = interpreter_process(interpreter, node->condition);
+    if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
+    {
+      fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
+      return init_ast(AST_NOOP);
+    }
+
+    do
+    {
+      // Process the loop body
+      for (int i = 0; node->loop_body[i] != NULL; i++)
+      {
+        ast_ *current_statement = node->loop_body[i];
+        set_scope(current_statement, local_scope);
+        interpreter_process(interpreter, current_statement);
+      }
+
+      condition = interpreter_process(interpreter, node->condition);
+      if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
+      {
+        fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
+        return init_ast(AST_NOOP);
+      }
+
+      // Negate the condition to determine whether to repeat the loop
+    } while (!(condition->boolean_value.value));
+  }
+
   return init_ast(AST_NOOP);
 }
+
 ast_ *interpreter_process_selection(interpreter_ *interpreter, ast_ *node)
 {
   printf(">> selection <<\n");
