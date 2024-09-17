@@ -15,7 +15,7 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_compound(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node);
-ast_ *interpreter_process_record_access(interpreter_ *interpreter, ast_ *node);
+ast_ **interpreter_process_record_access(interpreter_ *interpreter, ast_ *node);
 ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ *node);

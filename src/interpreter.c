@@ -165,17 +165,21 @@ void interpreter_output_literal(ast_ *expr, interpreter_ *interpreter)
   case AST_RECORD:
     if (expr->record_name != NULL && expr->record_elements != NULL)
     {
-      printf("%s {\n", expr->record_name);
+      printf("%s {", expr->record_name); // Open record name and brace
       for (size_t k = 0; k < expr->field_count; k++)
       {
-        printf("  %s: ", expr->record_elements[k]->element_name);
-        interpreter_output_literal(expr->record_elements[k]->element, interpreter);
-        printf("\n");
+        printf("%s: ", expr->record_elements[k]->element_name);                     // Print field name
+        interpreter_output_literal(expr->record_elements[k]->element, interpreter); // Print field value
+
+        // Print comma after every element except the last one
+        if (k < expr->field_count - 1)
+        {
+          printf(", ");
+        }
       }
-      printf("}");
+      printf("}"); // Close the record
     }
     break;
-
   default:
     fprintf(stderr, "Unsupported output type in AST_OUTPUT.\n");
     exit(1);
@@ -270,9 +274,8 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
   case AST_VARIABLE:
     return interpreter_process_variable(interpreter, node);
   case AST_RECORD_ACCESS:
-    return interpreter_process_record_access(interpreter, node);
+    return *interpreter_process_record_access(interpreter, node);
   case AST_ARRAY_ACCESS:
-    // Use the dereferenced value of the pointer returned by interpreter_process_array_access
     return *interpreter_process_array_access(interpreter, node); // Dereference the pointer to get the value
   case AST_INSTANTIATION:
     return interpreter_process_instantiation(interpreter, node);
@@ -313,42 +316,49 @@ ast_ *interpreter_process_compound(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
 {
-  // Process the right-hand side value before assigning it
+  // Process the right-hand side value
   ast_ *rhs_value = interpreter_process(interpreter, node->rhs);
 
   // Initialize a new AST node for the assignment
   ast_ *new_assignment = init_ast(AST_ASSIGNMENT);
 
+  ast_ **target_element = NULL;
+
+  // Determine whether we're dealing with array or record access
   if (node->lhs->type == AST_ARRAY_ACCESS)
   {
-    // Use interpreter_process_array_access to fetch the pointer to the target array element
-    ast_ **target_element = interpreter_process_array_access(interpreter, node->lhs);
-
-    // Type-check to ensure the types match before assignment
-    if ((*target_element)->type == rhs_value->type)
-    {
-      *target_element = rhs_value; // Assign the right-hand side value to the target element
-    }
-    else
-    {
-      printf("Error: Type mismatch during array assignment.\n");
-      exit(1);
-    }
-
-    // Assign the modified array to the right-hand side of the assignment node
-    new_assignment->lhs = init_ast(AST_VARIABLE);
-    new_assignment->lhs->variable_name = node->lhs->variable_name;
-    new_assignment->rhs = scope_get_variable_definition(get_scope(node), node->lhs->variable_name); // Reassign the modified array
+    target_element = interpreter_process_array_access(interpreter, node->lhs);
   }
   else if (node->lhs->type == AST_RECORD_ACCESS)
   {
-    // Handle record access assignment (if needed)
+    target_element = interpreter_process_record_access(interpreter, node->lhs);
+  }
+
+  // If target_element is set (array or record field access)
+  if (target_element)
+  {
+    // Type-check before assignment
+    if ((*target_element)->type == rhs_value->type)
+    {
+      // Perform the assignment
+      *target_element = rhs_value;
+    }
+    else
+    {
+      fprintf(stderr, "Error: Type mismatch during assignment.\n");
+      exit(1);
+    }
+
+    // Update the assignment node for arrays or records
+    new_assignment->lhs = init_ast(AST_VARIABLE);
+    new_assignment->lhs->variable_name = node->lhs->variable_name;
+    new_assignment->rhs = scope_get_variable_definition(get_scope(node), node->lhs->variable_name); // Reassign the modified array/record
   }
   else
   {
-    // Simple variable assignment
-    new_assignment->lhs = node->lhs; // Keep the left-hand side (variable) the same
-    new_assignment->rhs = rhs_value; // Use the processed right-hand side value
+    // Handle simple variable assignment
+    new_assignment->lhs = node->lhs; // Keep the LHS (variable) the same
+    new_assignment->rhs = rhs_value; // Use the processed RHS value
   }
 
   // Add the variable and its value to the scope
@@ -435,10 +445,36 @@ ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
   return NULL; // Should not reach here
 }
 
-ast_ *interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
+ast_ **interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> record_access <<\n");
-  return init_ast(AST_NOOP);
+  // Get the record from the scope by its variable name
+  ast_ *record = scope_get_variable_definition(get_scope(node), node->variable_name);
+
+  // Ensure that the variable is actually a record
+  if (!record || record->type != AST_RECORD)
+  {
+    fprintf(stderr, "Error: %s is not defined as a record.\n", node->variable_name);
+    exit(1);
+  }
+
+  // Loop through the record elements to find the matching field
+  for (int i = 0; i < record->field_count; i++)
+  {
+    ast_record_element_ *field = record->record_elements[i];
+
+    // Check if the field name matches the requested field
+    if (strcmp(field->element_name, node->field_name) == 0)
+    {
+      // Return a pointer to the element for reading or modifying its value
+      return &field->element; // Return a pointer to the element
+    }
+  }
+
+  // If the field wasn't found, output an error
+  fprintf(stderr, "Error: Field '%s' not found in record '%s'.\n", node->field_name, node->variable_name);
+  exit(1);
+
+  return NULL; // Fallback, should not reach here
 }
 
 ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)

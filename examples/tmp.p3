@@ -1,3 +1,24 @@
+RECORD Car
+  make : String
+  model : String
+  reg : String
+  price : Real
+  noOfDoors : Integer
+ENDRECORD
+
+myCar <- Car("Ford", "Focus", "DX17 GYT", 1399.99, 5)
+
+OUTPUT myCar # outputs Car {make: Ford, model: Focus, reg: DX17 GYT, price: 1399.99, noOfDoors: 5}
+
+OUTPUT myCar.model # outputs "Focus"
+
+myCar.model <- "Fiesta"
+
+OUTPUT myCar  # outputs Car {make: Ford, model: Fiesta, reg: DX17 GYT, price: 1399.99, noOfDoors: 5}
+
+OUTPUT myCar.model # outputs "Fiesta"
+
+
 primes <- [2,3,5,7,11,13]
 
 OUTPUT primes # output [2, 3, 5, 7, 11, 13]
