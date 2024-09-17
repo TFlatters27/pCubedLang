@@ -1,16 +1,4 @@
-CONSTANT ALPHABET <- ['a', 'b', 'c', 'd', 'e', 'f']
-
-table <- [[1,2],[2,4],[3,6],[4,8]]
-
-RECORD Student
-  name : String
-  age : Integer
-  score : Real
-  passed : Boolean
-  array : Integer[][]
-  grades : Char[]
-ENDRECORD
-
-student1 <- Student('Bob', 17, 89.5, True, table, ALPHABET)
-
-OUTPUT student1
+a <- 1
+OUTPUT a
+a <- USERINPUT
+OUTPUT a

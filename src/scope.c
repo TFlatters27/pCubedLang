@@ -379,26 +379,6 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
   // Variable name is accessed via vdef->lhs->variable_name
   const char *new_var_name = vdef->lhs->variable_name;
 
-  // Iterate through the existing variable definitions to check for overwriting
-  for (size_t i = 0; scope->variable_definitions[i] != NULL; i++)
-  {
-    if (strcmp(scope->variable_definitions[i]->lhs->variable_name, new_var_name) == 0)
-    {
-      // Check if the existing variable is a constant
-      if (scope->variable_definitions[i]->lhs->constant == 1)
-      {
-        fprintf(stderr, "Error: Cannot overwrite constant variable '%s'.\n", new_var_name);
-        exit(1);
-      }
-
-      // Overwrite the existing variable definition
-      // printf("Overwriting variable '%s' in scope %p\n", new_var_name, scope);
-      scope->variable_definitions[i]->lhs = vdef->lhs;
-      scope->variable_definitions[i]->rhs = vdef->rhs;
-      return scope->variable_definitions[i]; // Return the overwritten variable
-    }
-  }
-
   // Check if user input is required for the new variable
   if (vdef->lhs->userinput == 1)
   {
@@ -417,6 +397,26 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
 
       // Store the input as the variable's value (in vdef->rhs or a suitable location)
       vdef->rhs->string_value = strdup(input_buffer); // Assuming rhs stores a string_value
+    }
+  }
+
+  // Iterate through the existing variable definitions to check for overwriting
+  for (size_t i = 0; scope->variable_definitions[i] != NULL; i++)
+  {
+    if (strcmp(scope->variable_definitions[i]->lhs->variable_name, new_var_name) == 0)
+    {
+      // Check if the existing variable is a constant
+      if (scope->variable_definitions[i]->lhs->constant == 1)
+      {
+        fprintf(stderr, "Error: Cannot overwrite constant variable '%s'.\n", new_var_name);
+        exit(1);
+      }
+
+      // Overwrite the existing variable definition
+      // printf("Overwriting variable '%s' in scope %p\n", new_var_name, scope);
+      scope->variable_definitions[i]->lhs = vdef->lhs;
+      scope->variable_definitions[i]->rhs = vdef->rhs;
+      return scope->variable_definitions[i]; // Return the overwritten variable
     }
   }
 

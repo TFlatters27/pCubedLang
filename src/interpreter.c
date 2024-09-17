@@ -980,11 +980,12 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     // Assign the arguments to the subroutine's parameters within this new scope
     for (int i = 0; i < node->arguments_count; i++)
     {
+      ast_ *arg = interpreter_process(interpreter, node->arguments[i]);
       ast_ *var = init_ast(AST_ASSIGNMENT);
       var->lhs = init_ast(AST_VARIABLE);
       var->lhs->variable_name = strdup(inst_definition_copy->parameters[i]->variable_name);
-      var->rhs = init_ast(node->arguments[i]->type);
-      *var->rhs = *node->arguments[i];
+      var->rhs = init_ast(arg->type);
+      *var->rhs = *arg;
 
       // Add the variable to the subroutine-specific scope
       scope_add_variable_definition(node->scope, var);
@@ -1052,6 +1053,11 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       result->real_value.null = 0;
       return result;
     }
+    else
+    {
+      fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+      return NULL;
+    }
   }
 
   // Handle binary operations
@@ -1062,87 +1068,152 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
     {
       return concatenate(left_val, right_val); // General concatenation for char/string
     }
-    else if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    else if (left_val->type == right_val->type)
     {
-      ast_ *result = init_ast(AST_INTEGER);
-      result->int_value.value = left_val->int_value.value + right_val->int_value.value;
-      result->int_value.null = 0;
-      return result;
+      if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+      {
+        ast_ *result = init_ast(AST_INTEGER);
+        result->int_value.value = left_val->int_value.value + right_val->int_value.value;
+        result->int_value.null = 0;
+        return result;
+      }
+      else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+      {
+        ast_ *result = init_ast(AST_REAL);
+        result->real_value.value = left_val->real_value.value + right_val->real_value.value;
+        result->real_value.null = 0;
+        return result;
+      }
+      else
+      {
+        fprintf(stderr, "Error: `%s` operator is only compatible with Integer, Real, Character, or String types\n", node->op);
+        return NULL;
+      }
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else
     {
-      ast_ *result = init_ast(AST_REAL);
-      result->real_value.value = left_val->real_value.value + right_val->real_value.value;
-      result->real_value.null = 0;
-      return result;
+      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      return NULL;
     }
   }
   else if (strcmp(node->op, "-") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == right_val->type)
     {
-      ast_ *result = init_ast(AST_INTEGER);
-      result->int_value.value = left_val->int_value.value - right_val->int_value.value;
-      result->int_value.null = 0;
-      return result;
+      if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+      {
+        ast_ *result = init_ast(AST_INTEGER);
+        result->int_value.value = left_val->int_value.value - right_val->int_value.value;
+        result->int_value.null = 0;
+        return result;
+      }
+      else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+      {
+        ast_ *result = init_ast(AST_REAL);
+        result->real_value.value = left_val->real_value.value - right_val->real_value.value;
+        result->real_value.null = 0;
+        return result;
+      }
+      else
+      {
+        fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+        return NULL;
+      }
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else
     {
-      ast_ *result = init_ast(AST_REAL);
-      result->real_value.value = left_val->real_value.value - right_val->real_value.value;
-      result->real_value.null = 0;
-      return result;
+      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      return NULL;
     }
   }
   else if (strcmp(node->op, "*") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == right_val->type)
     {
-      ast_ *result = init_ast(AST_INTEGER);
-      result->int_value.value = left_val->int_value.value * right_val->int_value.value;
-      result->int_value.null = 0;
-      return result;
+      if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+      {
+        ast_ *result = init_ast(AST_INTEGER);
+        result->int_value.value = left_val->int_value.value * right_val->int_value.value;
+        result->int_value.null = 0;
+        return result;
+      }
+      else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+      {
+        ast_ *result = init_ast(AST_REAL);
+        result->real_value.value = left_val->real_value.value * right_val->real_value.value;
+        result->real_value.null = 0;
+        return result;
+      }
+      else
+      {
+        fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+        return NULL;
+      }
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else
     {
-      ast_ *result = init_ast(AST_REAL);
-      result->real_value.value = left_val->real_value.value * right_val->real_value.value;
-      result->real_value.null = 0;
-      return result;
+      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      return NULL;
     }
   }
   else if (strcmp(node->op, "/") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == right_val->type)
     {
-      ast_ *result = init_ast(AST_INTEGER);
-      result->int_value.value = left_val->int_value.value / right_val->int_value.value;
-      result->int_value.null = 0;
-      return result;
+      if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+      {
+        ast_ *result = init_ast(AST_INTEGER);
+        result->int_value.value = left_val->int_value.value / right_val->int_value.value;
+        result->int_value.null = 0;
+        return result;
+      }
+      else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+      {
+        ast_ *result = init_ast(AST_REAL);
+        result->real_value.value = left_val->real_value.value / right_val->real_value.value;
+        result->real_value.null = 0;
+        return result;
+      }
+      else
+      {
+        fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+        return NULL;
+      }
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else
     {
-      ast_ *result = init_ast(AST_REAL);
-      result->real_value.value = left_val->real_value.value / right_val->real_value.value;
-      result->real_value.null = 0;
-      return result;
+      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      return NULL;
     }
   }
   else if (strcmp(node->op, "^") == 0)
   {
-    if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+    if (left_val->type == right_val->type)
     {
-      ast_ *result = init_ast(AST_INTEGER);
-      result->int_value.value = pow(left_val->int_value.value, right_val->int_value.value);
-      result->int_value.null = 0;
-      return result;
+      if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
+      {
+        ast_ *result = init_ast(AST_INTEGER);
+        result->int_value.value = pow(left_val->int_value.value, right_val->int_value.value);
+        result->int_value.null = 0;
+        return result;
+      }
+      else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+      {
+        ast_ *result = init_ast(AST_REAL);
+        result->real_value.value = pow(left_val->real_value.value, right_val->real_value.value);
+        result->real_value.null = 0;
+        return result;
+      }
+      else
+      {
+        fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+        return NULL;
+      }
     }
-    else if (left_val->type == AST_REAL && right_val->type == AST_REAL)
+    else
     {
-      ast_ *result = init_ast(AST_REAL);
-      result->real_value.value = pow(left_val->real_value.value, right_val->real_value.value);
-      result->real_value.null = 0;
-      return result;
+      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      return NULL;
     }
   }
   else if (strcmp(node->op, "DIV") == 0)
@@ -1154,6 +1225,11 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       result->int_value.null = 0;
       return result;
     }
+    else
+    {
+      fprintf(stderr, "Error: `%s` operator is only compatible with Integer types\n", node->op);
+      return NULL;
+    }
   }
   else if (strcmp(node->op, "MOD") == 0)
   {
@@ -1163,6 +1239,11 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       result->int_value.value = left_val->int_value.value % right_val->int_value.value;
       result->int_value.null = 0;
       return result;
+    }
+    else
+    {
+      fprintf(stderr, "Error: `%s` operator is only compatible with Integer types\n", node->op);
+      return NULL;
     }
   }
 

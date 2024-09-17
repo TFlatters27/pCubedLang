@@ -100,8 +100,9 @@
 ## Desirable Additions
 
 - [ ] Implement BODMAS (operation precedence) for arithmetic expressions
-- [ ] Allow USERINPUT to be parsed as an expression rather than a string
 - [ ] Add EXIT keyword for programatic use and also REPL mode
+- [ ] Allow USERINPUT to be parsed as an expression rather than a string
 - [ ] Add multi nesting of records
 - [ ] Add default values in record fields
+- [ ] Have named scopes
 - [x] Printing of arrays and records

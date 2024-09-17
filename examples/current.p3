@@ -56,6 +56,7 @@ SUBROUTINE add(a,b)
   RETURN result
 ENDSUBROUTINE
 
+
 SUBROUTINE printHello(i)
   FOR a <- 1 TO i
     OUTPUT "Hello World!"
@@ -63,7 +64,7 @@ SUBROUTINE printHello(i)
 ENDSUBROUTINE
 
 bond <- add(3,7)
-printHello(i)
+printHello(3)
 
 OUTPUT "This is a test"
 OUTPUT "Hello", "World", "!"
@@ -103,8 +104,9 @@ total <- 0
 FOR prime IN primes
   total <- total + prime
 ENDFOR
-OUTPUT 'Sum of the values in primes is'
+OUTPUT 'Sum of the values in primes is', total
 
+sum <- 1
 sum <- sum + 1
 square <- a^2.0
 mod <- 7 MOD i
@@ -166,8 +168,3 @@ student1.passed <- False
 val <- student1.passed
 
 a <- USERINPUT
-
-OUTPUT ((a MOD 5) != 0 AND (a MOD 3) != 0)
-
-OUTPUT a MOD 5 != (0 AND (a MOD 3) != 0)
-
