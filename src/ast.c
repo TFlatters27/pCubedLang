@@ -22,6 +22,8 @@ ast_ *init_ast(enum ast_type type)
   ast->boolean_value.value = 0;
   ast->array_elements = NULL;
   ast->array_size = 0;
+  ast->array_dimension = 0;
+  ast->array_type = AST_NOOP;
 
   ast->compound_value = NULL;
   ast->lhs = NULL;
@@ -130,6 +132,8 @@ ast_ *deep_copy(ast_ *original)
   copy->userinput = original->userinput;
 
   copy->array_size = original->array_size;
+  copy->array_type = original->array_type;
+  copy->array_dimension = original->array_dimension;
   copy->field_count = original->field_count;
   copy->parameter_count = original->parameter_count;
   copy->arguments_count = original->arguments_count;
@@ -570,18 +574,27 @@ void print_ast_literal(ast_ *node, int indent)
     print_indent(indent);
     if (node->array_elements != NULL && node->array_size != 0)
     {
+      printf("Array Type: %s\n", ast_type_to_string(node->array_type));
+
+      print_indent(indent);
       printf("Array:\n");
+
       int i = 0;
       while (node->array_elements[i] != NULL)
       {
         print_ast(node->array_elements[i], indent + 1);
         i++;
       }
+
       print_indent(indent);
       printf("Array size: %d\n", node->array_size);
+
+      print_indent(indent);
+      printf("Array dimension: %d\n", node->array_dimension);
     }
     else
     {
+      print_indent(indent);
       printf("Array: null\n");
     }
     break;

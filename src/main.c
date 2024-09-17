@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "include/lexer.h"
 #include "include/parser.h"
 #include "include/scope.h"
@@ -11,14 +12,27 @@
 
 void print_help()
 {
-  printf("Usage:\np3 <filename>\n");
+  printf("Usage:\np3 <filename> [--debug]\n");
   exit(1);
 }
 
 int main(int argc, char *argv[])
 {
+  clock_t start_time = clock(); // Start the clock
+  int debug = 0;
+
+  // Check if --debug is present
   if (argc >= 2)
   {
+    for (int i = 1; i < argc; i++)
+    {
+      if (strcmp(argv[i], "--debug") == 0)
+      {
+        debug = 1; // Set debug flag if --debug is specified
+        break;
+      }
+    }
+
     for (int i = 1; i < argc; i++)
     {
       int len = strlen(argv[i]);
@@ -35,9 +49,18 @@ int main(int argc, char *argv[])
 
         // Parse and interpret
         ast_ *root = parser_parse(parser, scope);
+
+        // If debug flag is set, print the root AST
+        if (debug)
+        {
+          printf("**************************ROOT AST*************************\n");
+          print_ast(root, 0);
+          printf("***********************************************************\n");
+        }
+
         interpreter_process(interpreter, root);
       }
-      else
+      else if (strcmp(argv[i], "--debug") != 0) // Ignore the --debug flag during extension check
       {
         print_help();
       }
@@ -63,5 +86,18 @@ int main(int argc, char *argv[])
       interpreter_process(interpreter, root);
     }
   }
+
+  // End the clock and calculate the elapsed time
+  clock_t end_time = clock();
+  double time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+
+  // If debug flag is set, print the execution time
+  if (debug)
+  {
+    printf("*************************RUNTIME***************************\n");
+    printf("Execution time: %.6f seconds\n", time_spent);
+    printf("***********************************************************\n");
+  }
+
   return 0;
 }

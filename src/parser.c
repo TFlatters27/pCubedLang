@@ -67,7 +67,6 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
     {
       if (ast_statement->type != AST_NOOP)
       {
-        print_ast(ast_statement, 0);
         set_scope(ast_statement, scope);
         add_ast_to_list(&(compound->compound_value), ast_statement);
       }
@@ -78,7 +77,6 @@ ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
     }
   } while (parser->current_token->type != TOKEN_EOF);
 
-  printf("****************************************************************\n");
   return compound;
 }
 
@@ -193,13 +191,34 @@ ast_ *parse_array(parser_ *parser, scope_ *scope)
   ast_ *expression = init_ast(AST_ARRAY);
   expression->array_elements = init_ast_list();
 
+  // Initialize array_dimension to 1 as we are starting with an array
+  expression->array_dimension = 1;
+  expression->array_type = AST_ARRAY; // Set a default array type initially
+
   parser_expect(parser, TOKEN_LBRACKET); // Consume '['
 
   while (parser->current_token->type != TOKEN_RBRACKET)
   {
     ast_ *element = parse_expression(parser, scope);         // Parse each element
     add_ast_to_list(&(expression->array_elements), element); // Add element to the array
+
+    // If the element is an array, increment the array_dimension
+    if (element->type == AST_ARRAY)
+    {
+      // Bubble up the dimension and type from the sub-array
+      expression->array_dimension = element->array_dimension + 1;
+
+      // Update the array type to match the sub-array's element type
+      expression->array_type = element->array_type;
+    }
+    else
+    {
+      // Set the array type to the element's type
+      expression->array_type = element->type;
+    }
+
     expression->array_size++;
+
     if (parser->current_token->type == TOKEN_COMMA)
     {
       parser_expect(parser, TOKEN_COMMA); // Consume ','
@@ -208,6 +227,7 @@ ast_ *parse_array(parser_ *parser, scope_ *scope)
 
   parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
   set_scope(expression, scope);
+
   return expression;
 }
 

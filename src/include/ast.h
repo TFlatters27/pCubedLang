@@ -86,6 +86,8 @@ typedef struct AST_STRUCT
 
     struct AST_STRUCT **array_elements; // List of elements (if this node is an array literal)
     int array_size;                     // Number of elements (if this node is an array literal
+    int array_dimension; // Number of nested arrays
+    enum ast_type array_type; // AST literal type of array
 
     /* AST_ASSIGNMENT */
     struct AST_STRUCT *lhs; // Left-hand side value to assign (variable or record access)

@@ -908,8 +908,13 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     // Assign the values from the arguments to the corresponding fields
     for (int i = 0; i < node->arguments_count; i++)
     {
-      // Match the type of the argument with the record field type
-      if (node->arguments[i]->type == inst_definition->record_elements[i]->element->type)
+      ast_ *arg = interpreter_process(interpreter, node->arguments[i]);
+
+      // Check if the types match or if the argument is an array and its type and dimensions match
+      if ((arg->type == inst_definition->record_elements[i]->element->type) ||
+          (arg->type == AST_ARRAY &&
+           arg->array_type == inst_definition->record_elements[i]->element->type &&
+           arg->array_dimension == inst_definition->record_elements[i]->dimension))
       {
         // Allocate memory for the record element
         ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
@@ -922,27 +927,30 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
         record_element->element_name = inst_definition->record_elements[i]->element_name;
 
         // Initialize the value element based on the argument's type
-        ast_ *element = init_ast(node->arguments[i]->type);
+        ast_ *element = init_ast(arg->type);
         switch (element->type)
         {
         case AST_INTEGER:
-          element->int_value = node->arguments[i]->int_value;
+          element->int_value = arg->int_value;
           break;
         case AST_REAL:
-          element->real_value = node->arguments[i]->real_value;
+          element->real_value = arg->real_value;
           break;
         case AST_CHARACTER:
-          element->char_value = node->arguments[i]->char_value;
+          element->char_value = arg->char_value;
           break;
         case AST_STRING:
-          element->string_value = node->arguments[i]->string_value;
+          element->string_value = arg->string_value;
           break;
         case AST_BOOLEAN:
-          element->boolean_value = node->arguments[i]->boolean_value;
+          element->boolean_value = arg->boolean_value;
           break;
         case AST_ARRAY:
-          element->array_elements = node->arguments[i]->array_elements;
-          element->array_size = node->arguments[i]->array_size;
+          // Handle arrays by copying elements, size, and dimension
+          element->array_elements = arg->array_elements;
+          element->array_size = arg->array_size;
+          element->array_type = arg->array_type;
+          element->array_dimension = arg->array_dimension;
           break;
         default:
           fprintf(stderr, "Error: Unsupported type for record instantiation.\n");
@@ -951,7 +959,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
 
         // Assign the element to the record element
         record_element->element = element;
-        record_element->dimension = 0;
+        record_element->dimension = (element->type == AST_ARRAY) ? element->array_dimension : 0;
 
         // Add the record element to the list of record elements
         add_ast_to_list((ast_ ***)&new_record->record_elements, (ast_ *)record_element);
@@ -959,7 +967,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
       }
       else
       {
-        printf("Error: Mismatched type for argument %d in record instantiation '%s'.\n", i, node->class_name);
+        printf("Error: Mismatched type or dimension for argument %d in record instantiation '%s'.\n", i + 1, node->class_name);
         exit(1);
       }
     }

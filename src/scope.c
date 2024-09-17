@@ -251,7 +251,6 @@ scope_ *get_scope(ast_ *node)
 
   if (node->scope == NULL)
   {
-    fprintf(stderr, "Error: Invalid node scope\n");
     return NULL;
   }
 

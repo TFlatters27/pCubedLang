@@ -4,10 +4,9 @@
 CONSTANT PI <- 3.14159
 CONSTANT CHAR <- 'z' + 'x'
 CONSTANT KELVIN <- -280
-CONSTANT SUN <- -kelvin
+CONSTANT SUN <- -KELVIN
 CONSTANT CLASS_NAME <- "Year 4"
 CONSTANT SPEED_OF_LIGHT <- (3 * 1000) - (3 / 1000) + 1
-CONSTANT SCORES <- [85, 90, 88, 92, 95]
 CONSTANT ALPHABET <- ['a', 'b', 'c', 'd', 'e', 'f']
 
 # Variables
@@ -15,7 +14,10 @@ name <- 'Alice'
 age <- 16 + 1
 score <- 95.5 - 0.5
 isPassed <- True
-value <- a + b - c
+a <- 1
+c <- 3
+value <- a + 2 - c
+scores <- [85, 90, 88, 92, 95]
 
 # Arrays
 table <- [[1,2],[2,4],[3,6],[4,8]]
