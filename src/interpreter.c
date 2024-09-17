@@ -300,7 +300,7 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
     exit(1);
   }
 
-  return init_ast(AST_NOOP); // This line will never be reached due to the exit above
+  return NULL; // This line will never be reached due to the exit above
 }
 
 ast_ *interpreter_process_compound(interpreter_ *interpreter, ast_ *node)
@@ -311,6 +311,7 @@ ast_ *interpreter_process_compound(interpreter_ *interpreter, ast_ *node)
     interpreter_process(interpreter, node->compound_value[i]);
     i++;
   }
+  // Keep this
   return init_ast(AST_NOOP);
 }
 
@@ -378,7 +379,7 @@ ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node)
 
   printf("Undefined variable `%s`\n", node->variable_name);
   exit(1);
-  return init_ast(AST_NOOP);
+  return NULL;
 }
 ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 {
@@ -487,7 +488,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 1)
     {
       fprintf(stderr, "Error: LEN method expects 1 argument, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the argument (assuming it's stored in node->arguments[0])
@@ -514,7 +515,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     {
       // Invalid argument type
       fprintf(stderr, "Error: LEN method expects an array or a string.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "POSITION") == 0)
@@ -523,7 +524,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 2)
     {
       fprintf(stderr, "Error: POS method expects 2 arguments, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the arguments
@@ -547,7 +548,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
       // If element is not found, return an error or a special value (-1)
       fprintf(stderr, "Error: Element not found in array.\n");
 
-      return init_ast(AST_NOOP);
+      return NULL;
     }
     // Check if arg0 is a string and arg1 is a character
     else if (arg0->type == AST_STRING && arg1->type == AST_CHARACTER)
@@ -564,13 +565,13 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
       }
       // If character is not found, return an error or a special value (-1)
       fprintf(stderr, "Error: Character not found in string.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
     else
     {
       // Invalid argument types
       fprintf(stderr, "Error: POS method expects an array or a string.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "SUBSTRING") == 0)
@@ -579,7 +580,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 3)
     {
       fprintf(stderr, "Error: SUBSTRING method expects 3 arguments, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the arguments
@@ -600,7 +601,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
       if (start < 0 || start >= string_length || end < 0 || end > string_length || start > end)
       {
         fprintf(stderr, "Error: SUBSTRING indices out of bounds or invalid. Start: %d, End: %d, String Length: %d\n", start, end, string_length);
-        return init_ast(AST_NOOP);
+        return NULL;
       }
 
       // Calculate the length of the substring
@@ -628,7 +629,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     {
       // Invalid argument types
       fprintf(stderr, "Error: SUBSTRING method expects a string followed by 2 integers.\n SUBSTRING(string, integer, integer)\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "SLICE") == 0)
@@ -637,7 +638,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 3)
     {
       fprintf(stderr, "Error: SLICE method expects 3 arguments, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the arguments
@@ -657,7 +658,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
       if (start < 0 || start >= array_size || end < 0 || end > array_size || start > end)
       {
         fprintf(stderr, "Error: SLICE indices out of bounds or invalid. Start: %d, End: %d, Array Size: %d\n", start, end, array_size);
-        return init_ast(AST_NOOP);
+        return NULL;
       }
 
       // Initialize the new array slice
@@ -680,7 +681,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     {
       // Invalid argument types
       fprintf(stderr, "Error: SLICE method expects an array followed by 2 integers.\n SLICE(array, integer, integer)\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "STRING_TO_INT") == 0)
@@ -689,7 +690,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 1)
     {
       fprintf(stderr, "Error: STRING_TO_INT method expects 1 argument, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the argument and check if it’s a string
@@ -705,7 +706,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     else
     {
       fprintf(stderr, "Error: STRING_TO_INT method expects a string argument.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "STRING_TO_REAL") == 0)
@@ -714,7 +715,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 1)
     {
       fprintf(stderr, "Error: STRING_TO_REAL method expects 1 argument, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the argument and check if it’s a string
@@ -730,7 +731,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     else
     {
       fprintf(stderr, "Error: STRING_TO_REAL method expects a string argument.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "INT_TO_STRING") == 0)
@@ -739,7 +740,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 1)
     {
       fprintf(stderr, "Error: INT_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the argument and check if it’s an integer
@@ -755,7 +756,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     else
     {
       fprintf(stderr, "Error: INT_TO_STRING method expects an integer argument.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "REAL_TO_STRING") == 0)
@@ -764,7 +765,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 1)
     {
       fprintf(stderr, "Error: REAL_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the argument and check if it’s a real (float/double)
@@ -780,7 +781,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     else
     {
       fprintf(stderr, "Error: REAL_TO_STRING method expects a real argument.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "CHAR_TO_CODE") == 0)
@@ -789,7 +790,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 1)
     {
       fprintf(stderr, "Error: CHAR_TO_CODE method expects 1 argument, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the argument and check if it’s a character
@@ -805,7 +806,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     else
     {
       fprintf(stderr, "Error: CHAR_TO_CODE method expects a character argument.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "CODE_TO_CHAR") == 0)
@@ -814,7 +815,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 1)
     {
       fprintf(stderr, "Error: CODE_TO_CHAR method expects 1 argument, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the argument and check if it’s an integer (ASCII code)
@@ -830,7 +831,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     else
     {
       fprintf(stderr, "Error: CODE_TO_CHAR method expects an integer argument.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
   else if (strcmp(node->class_name, "RANDOM_INT") == 0)
@@ -839,7 +840,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     if (node->arguments_count != 2)
     {
       fprintf(stderr, "Error: RANDOM_INT method expects 2 arguments, but got %d.\n", node->arguments_count);
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Retrieve the arguments and check if they are integers
@@ -865,7 +866,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     else
     {
       fprintf(stderr, "Error: RANDOM_INT method expects two integer arguments.\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
   }
 
@@ -959,7 +960,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
       else
       {
         printf("Error: Mismatched type for argument %d in record instantiation '%s'.\n", i, node->class_name);
-        return init_ast(AST_NOOP);
+        exit(1);
       }
     }
 
@@ -1159,7 +1160,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
 
   printf("Invalid arithmetic operation: %s\n", node->op);
   exit(1);
-  return init_ast(AST_NOOP); // Return a no-op if no valid operation found
+  return NULL; // Return a no-op if no valid operation found
 }
 
 ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *node)
@@ -1349,6 +1350,9 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     // FOR-IN loop
     ast_ *collection = interpreter_process(interpreter, node->collection_expr);
 
+    // Store the original loop variable value (deep copy of the RHS)
+    ast_ *original_value = deep_copy(node->loop_variable->rhs);
+
     // Check if collection is either a string or an array
     if (collection->type == AST_STRING)
     {
@@ -1399,8 +1403,12 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     else
     {
       fprintf(stderr, "Error: Collection type not supported in FOR-IN loop\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
+
+    // Reset the loop variable to its original value
+    node->loop_variable->rhs = original_value;
+    scope_add_variable_definition(node->scope, node->loop_variable); // Update the scope with the reset value
   }
   else
   {
@@ -1411,7 +1419,7 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     if (end->type != AST_INTEGER || end->int_value.null == 1)
     {
       fprintf(stderr, "Error: End expression could not be recognized as an integer\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     // Process the step expression, default to 1 if not specified
@@ -1430,8 +1438,11 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     if (step->type != AST_INTEGER || step->int_value.null == 1)
     {
       fprintf(stderr, "Error: Step expression could not be recognized as an integer\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
+
+    // Store the original loop variable value (deep copy)
+    ast_ *original_value = deep_copy(node->loop_variable->rhs);
 
     // Initialize the local scope and the loop variable
     scope_ *local_scope = init_scope(node->scope);
@@ -1453,6 +1464,10 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
       node->loop_variable->rhs->int_value.value += step->int_value.value;
       scope_add_variable_definition(local_scope, node->loop_variable);
     }
+
+    // Reset the loop variable to its original value
+    node->loop_variable->rhs = original_value;
+    scope_add_variable_definition(node->scope, node->loop_variable); // Update the scope with the reset value
   }
 
   return init_ast(AST_NOOP); // Return a NOOP after loop execution
@@ -1470,7 +1485,7 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
     if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
     {
       fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
     while ((condition->boolean_value.value))
     {
@@ -1486,7 +1501,7 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
       if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
       {
         fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
-        return init_ast(AST_NOOP);
+        return NULL;
       }
     }
   }
@@ -1497,7 +1512,7 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
     if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
     {
       fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
-      return init_ast(AST_NOOP);
+      return NULL;
     }
 
     do
@@ -1514,7 +1529,7 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
       if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
       {
         fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
-        return init_ast(AST_NOOP);
+        return NULL;
       }
 
       // Negate the condition to determine whether to repeat the loop

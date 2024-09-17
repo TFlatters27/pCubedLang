@@ -1,44 +1,6 @@
-RECORD Car
-  make : String
-  model : String
-  reg : String
-  price : Real
-  noOfDoors : Integer
-ENDRECORD
-
-myCar <- Car("Ford", "Focus", "DX17 GYT", 1399.99, 5)
-
-OUTPUT myCar # outputs Car {make: Ford, model: Focus, reg: DX17 GYT, price: 1399.99, noOfDoors: 5}
-
-OUTPUT myCar.model # outputs "Focus"
-
-myCar.model <- "Fiesta"
-
-OUTPUT myCar  # outputs Car {make: Ford, model: Fiesta, reg: DX17 GYT, price: 1399.99, noOfDoors: 5}
-
-OUTPUT myCar.model # outputs "Fiesta"
-
-
-primes <- [2,3,5,7,11,13]
-
-OUTPUT primes # output [2, 3, 5, 7, 11, 13]
-
-OUTPUT primes[5] # output 13
-
-primes[5] <- 17
-
-OUTPUT primes[5] # output 17
-
-OUTPUT primes # output [2, 3, 5, 7, 11, 17]
-
-table <- [[1,2], [2,4], [3,6], [4,8]]
-
-OUTPUT table # output [[1, 2], [2, 4], [3, 6], [4, 8]]
-
-OUTPUT table[3][1] # output 8
-
-table[3][1] <- 16 # makes a copy of the original array and edits the index 3 in parent array and index 1 in child array to contain 16, then stores newly created array where orginal array once was
-
-OUTPUT table[3][1] # output 16
-
-OUTPUT table # output [[1, 2], [2, 4], [3, 6], [4, 16]]
+FOR a <- 1 TO 10
+  FOR b <- 1 TO 10
+    OUTPUT a * b
+  ENDFOR
+  OUTPUT
+ENDFOR

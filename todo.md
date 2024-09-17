@@ -62,7 +62,7 @@
 
 - [x] Declaration of records
 - [x] Instantiation of records
-- [ ] Record field access
+- [x] Record field access
 
 ## Subroutines
 
