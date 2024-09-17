@@ -78,9 +78,14 @@ void add_ast_to_list(ast_ ***list, ast_ *new_ast)
 {
   size_t count = 0;
 
-  if (*list == NULL)
+  if (*list == NULL || new_ast == NULL)
   {
-    fprintf(stderr, "Error: Cannot add AST to list. The list is NULL. Ensure the list is initialized before adding elements.\n");
+    fprintf(stderr, "Error: Cannot add AST to list. The list or AST is NULL. Ensure the list is initialized before adding elements.\n");
+    return;
+  }
+
+  if (new_ast->type == AST_NOOP)
+  {
     return;
   }
 

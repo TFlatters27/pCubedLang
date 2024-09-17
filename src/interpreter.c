@@ -1541,6 +1541,73 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
 
 ast_ *interpreter_process_selection(interpreter_ *interpreter, ast_ *node)
 {
-  printf(">> selection <<\n");
+  int condition_matched = 0; // A flag to indicate if a condition was met
+
+  if (node->if_condition == NULL || node->if_body == NULL)
+  {
+    fprintf(stderr, "Error: IF statement without condition or body\n");
+    return NULL;
+  }
+
+  // Process the IF condition
+  ast_ *if_condition = interpreter_process(interpreter, node->if_condition);
+  if (if_condition->type != AST_BOOLEAN || if_condition->boolean_value.null == 1)
+  {
+    fprintf(stderr, "Error: IF condition could not be evaluated to a boolean\n");
+    return NULL;
+  }
+
+  // If the IF condition is true, execute the IF body
+  if (if_condition->boolean_value.value)
+  {
+    condition_matched = 1; // Mark that a condition has been met
+    for (int i = 0; node->if_body[i] != NULL; i++)
+    {
+      ast_ *current_statement = node->if_body[i];
+      interpreter_process(interpreter, current_statement);
+    }
+  }
+
+  // Process the ELSE IF conditions and bodies if no IF condition was matched
+  if (!condition_matched && node->else_if_conditions != NULL && node->else_if_bodies != NULL)
+  {
+    int k = 0;
+    while (node->else_if_conditions[k] != NULL && node->else_if_bodies[k] != NULL)
+    {
+      // Evaluate the ELSE IF condition
+      ast_ *else_if_condition = interpreter_process(interpreter, node->else_if_conditions[k]);
+      if (else_if_condition->type != AST_BOOLEAN || else_if_condition->boolean_value.null == 1)
+      {
+        fprintf(stderr, "Error: ELSE IF condition could not be evaluated to a boolean\n");
+        return NULL;
+      }
+
+      // If the ELSE IF condition is true, execute the ELSE IF body
+      if (else_if_condition->boolean_value.value)
+      {
+        condition_matched = 1; // Mark that a condition has been met
+        for (int j = 0; node->else_if_bodies[k][j] != NULL; j++)
+        {
+          ast_ *current_statement = node->else_if_bodies[k][j];
+          interpreter_process(interpreter, current_statement);
+        }
+        break; // Stop checking other ELSE IFs after a match
+      }
+
+      k++; // Move to the next ELSE IF condition-body pair
+    }
+  }
+
+  // Process the ELSE body if no IF or ELSE IF conditions were true
+  if (!condition_matched && node->else_body != NULL)
+  {
+    for (int l = 0; node->else_body[l] != NULL; l++)
+    {
+      ast_ *current_statement = node->else_body[l];
+      interpreter_process(interpreter, current_statement);
+    }
+  }
+
+  // Do not return early, allowing the loop to continue processing
   return init_ast(AST_NOOP);
 }

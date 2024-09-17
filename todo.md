@@ -46,10 +46,10 @@
 
 ### If Statements
 
-- [ ] If selection
-- [ ] If-else selection
-- [ ] Nested selection
-- [ ] If-else if-else selection
+- [x] If selection
+- [x] If-else selection
+- [x] Nested selection
+- [x] If-else if-else selection
 
 ## Arrays
 
