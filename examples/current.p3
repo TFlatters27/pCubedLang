@@ -163,6 +163,8 @@ ELSE
   OUTPUT 'leaves a remainder of 3'
 ENDIF
 
+EXIT
+
 student1 <- Student('Bob', 17, 89.5, True, table, ALPHABET)
 student1.passed <- False
 val <- student1.passed

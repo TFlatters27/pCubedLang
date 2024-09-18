@@ -295,6 +295,8 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
     return interpreter_process_indefinite_loop(interpreter, node);
   case AST_SELECTION:
     return interpreter_process_selection(interpreter, node);
+  case AST_EXIT:
+    return interpreter_process_exit(interpreter, node);
   default:
     fprintf(stderr, "Uncaught statement of type `%s`\n", ast_type_to_string(node->type));
     exit(1);
@@ -1699,4 +1701,18 @@ ast_ *interpreter_process_selection(interpreter_ *interpreter, ast_ *node)
 
   // Do not return early, allowing the loop to continue processing
   return init_ast(AST_NOOP);
+}
+
+ast_ *interpreter_process_exit(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->exit_code == 0)
+  {
+    printf("Program exitted successfully!\n");
+    exit(0);
+  }
+  else
+  {
+    printf("Program exited with error code %d\n", node->exit_code);
+    exit(node->exit_code);
+  }
 }

@@ -60,6 +60,7 @@ ast_ *init_ast(enum ast_type type)
   ast->else_if_conditions = NULL;
   ast->else_if_bodies = NULL;
   ast->else_body = NULL;
+  ast->exit_code = 0;
 
   return ast;
 }
@@ -137,6 +138,7 @@ ast_ *deep_copy(ast_ *original)
   copy->field_count = original->field_count;
   copy->parameter_count = original->parameter_count;
   copy->arguments_count = original->arguments_count;
+  copy->exit_code = original->exit_code;
 
   // Deep copy of strings
   copy->string_value = original->string_value ? strdup(original->string_value) : NULL;
@@ -381,6 +383,8 @@ const char *ast_type_to_string(enum ast_type type)
     return "AST_INDEFINITE_LOOP";
   case AST_SELECTION:
     return "AST_SELECTION";
+  case AST_EXIT:
+    return "AST_EXIT";
   default:
     return "AST_UNKNOWN";
   }
@@ -930,7 +934,12 @@ void print_ast(ast_ *node, int indent)
       }
     }
     break;
-
+  case AST_EXIT:
+  {
+    print_indent(indent);
+    printf("EXIT Statement %d\n", node->exit_code);
+    break;
+  }
   default:
     // print_indent(indent);
     // printf("Unknown AST Node Type\n");

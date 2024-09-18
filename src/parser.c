@@ -92,6 +92,7 @@ ast_ *parser_parse_id(parser_ *parser, scope_ *scope)
       {"SUBROUTINE", handle_subroutine},
       {"RETURN", handle_return},
       {"OUTPUT", handle_output},
+      {"EXIT", handle_exit},
       {NULL, NULL} // Sentinel value to mark the end of the array
   };
 
@@ -901,4 +902,24 @@ ast_ *handle_output(parser_ *parser, scope_ *scope)
 
   set_scope(output_ast, scope);
   return output_ast;
+}
+
+ast_ *handle_exit(parser_ *parser, scope_ *scope)
+{
+  // Create an AST node for the EXIT statement
+  ast_ *exit_ast = init_ast(AST_EXIT);
+
+  // Expect and consume the "EXIT" keyword
+  parser_expect(parser, TOKEN_ID);
+
+  if (parser->current_token->type == TOKEN_INT)
+  {
+    // Parse and consume the exit code
+    exit_ast->exit_code = atoi(parser->current_token->value);
+    parser_expect(parser, TOKEN_INT);
+  }
+  parser_expect(parser, TOKEN_NEWLINE);
+
+  set_scope(exit_ast, scope);
+  return exit_ast;
 }

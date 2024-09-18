@@ -33,6 +33,7 @@ enum ast_type
     AST_DEFINITE_LOOP,   // For count-controlled loops (FOR loops)
     AST_INDEFINITE_LOOP, // For condition-controlled loops (REPEAT & WHILE loops)
     AST_SELECTION,       // For selection control blocks (IF-ELSE-ELSE IF statements)
+    AST_EXIT,           // For EXIT statements
 };
 
 // Structure representing an element (field) in a record.
@@ -148,6 +149,8 @@ typedef struct AST_STRUCT
     struct AST_STRUCT **else_if_conditions; // List of conditions for ELSE IF blocks
     struct AST_STRUCT ***else_if_bodies;    // List of AST node lists representing ELSE IF bodies
     struct AST_STRUCT **else_body;          // List of AST nodes representing the ELSE body
+
+    int exit_code; // Exit code for EXIT statements
 } ast_;
 
 // Function to initialize an AST node of a given type.

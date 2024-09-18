@@ -26,5 +26,6 @@ ast_ *interpreter_process_output(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node);
 ast_ *interpreter_process_selection(interpreter_ *interpreter, ast_ *node);
+ast_ *interpreter_process_exit(interpreter_ *interpreter, ast_ *node);
 
 #endif
