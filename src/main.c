@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
         // Initialize components
         lexer_ *lexer = init_lexer(file_contents);
-        scope_ *scope = init_scope(NULL);
+        scope_ *scope = init_scope(NULL, "global_scope");
         parser_ *parser = init_parser(lexer, scope);
         interpreter_ *interpreter = init_interpreter();
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
       // Initialize components for REPL mode
       lexer_ *lexer = init_lexer(input);
-      scope_ *scope = init_scope(NULL);
+      scope_ *scope = init_scope(NULL, "global_scope");
       parser_ *parser = init_parser(lexer, scope);
       interpreter_ *interpreter = init_interpreter();
 

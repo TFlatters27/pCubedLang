@@ -30,7 +30,7 @@ int is_builtin_method(const char *name)
   return 0; // No match
 }
 
-scope_ *init_scope(scope_ *parent_scope)
+scope_ *init_scope(scope_ *parent_scope, const char *scope_name)
 {
   scope_ *scope = calloc(1, sizeof(struct SCOPE_STRUCT));
   if (!scope)
@@ -65,6 +65,8 @@ scope_ *init_scope(scope_ *parent_scope)
     scope->variable_definitions = init_ast_list();
     // printf("Created new scope %p\n", scope);
   }
+
+  scope->scope_name = scope_name;
 
   return scope;
 }
@@ -299,7 +301,7 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
       if (existing_def->type == AST_RECORD_DEFINITION &&
           strcmp(existing_def->record_name, idef->record_name) == 0)
       {
-        fprintf(stderr, "Error: Record '%s' already exists.\n", idef->record_name);
+        fprintf(stderr, "Error: Record '%s' already exists in scope `%s`.\n", idef->record_name, scope->scope_name);
         exit(1);
       }
       else if (existing_def->type == AST_SUBROUTINE &&
@@ -307,8 +309,8 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
                existing_def->parameter_count == idef->field_count)
       {
         // A record cannot have the same name and field count as an existing subroutine
-        fprintf(stderr, "Error: Record '%s' with %d fields conflicts with subroutine '%s' with %d parameters.\n",
-                idef->record_name, idef->field_count, existing_def->subroutine_name, existing_def->parameter_count);
+        fprintf(stderr, "Error: Record '%s' with %d fields conflicts with subroutine '%s' with %d parameters in scope `%s`.\n",
+                idef->record_name, idef->field_count, existing_def->subroutine_name, existing_def->parameter_count, scope->scope_name);
         exit(1);
       }
     }
@@ -321,8 +323,8 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
           existing_def->field_count == idef->parameter_count)
       {
         // A subroutine cannot have the same name and parameter count as an existing record
-        fprintf(stderr, "Error: Subroutine '%s' with %d parameters conflicts with record '%s' with %d fields.\n",
-                idef->subroutine_name, idef->parameter_count, existing_def->record_name, existing_def->field_count);
+        fprintf(stderr, "Error: Subroutine '%s' with %d parameters conflicts with record '%s' with %d fields in scope `%s`.\n",
+                idef->subroutine_name, idef->parameter_count, existing_def->record_name, existing_def->field_count, scope->scope_name);
         exit(1);
       }
       else if (existing_def->type == AST_SUBROUTINE &&
@@ -330,8 +332,8 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
                existing_def->parameter_count == idef->parameter_count)
       {
         // A subroutine cannot have the same name and parameter count as an existing subroutine
-        fprintf(stderr, "Error: Subroutine '%s' with %d parameters already exists.\n",
-                idef->subroutine_name, idef->parameter_count);
+        fprintf(stderr, "Error: Subroutine '%s' with %d parameters already exists in scope `%s`.\n",
+                idef->subroutine_name, idef->parameter_count, scope->scope_name);
         exit(1);
       }
     }
@@ -364,7 +366,7 @@ ast_ *scope_get_instantiation_definition(scope_ *scope, const char *iname)
       return idef; // Record found
     }
   }
-  fprintf(stderr, "Error: No instantiation definition found for '%s'\n", iname);
+  fprintf(stderr, "Error: No instantiation definition found for '%s' in scope `%s`\n", iname, scope->scope_name);
   exit(1);
 }
 
@@ -444,6 +446,6 @@ ast_ *scope_get_variable_definition(scope_ *scope, const char *vname)
     }
   }
 
-  fprintf(stderr, "Error: Variable definition `%s` not found in scope %p.\n", vname, scope);
+  fprintf(stderr, "Error: Variable definition `%s` not found in scope `%s`.\n", vname, scope->scope_name);
   exit(1); // Variable not found
 }

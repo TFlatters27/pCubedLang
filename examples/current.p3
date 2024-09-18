@@ -168,3 +168,4 @@ student1.passed <- False
 val <- student1.passed
 
 a <- USERINPUT
+OUTPUT test_variable

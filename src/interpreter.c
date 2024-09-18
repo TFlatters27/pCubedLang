@@ -1447,7 +1447,7 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     {
       // Iterate over string characters
       int length = strlen(collection->string_value);
-      scope_ *local_scope = init_scope(node->scope);
+      scope_ *local_scope = init_scope(node->scope, "child_scope");
 
       for (int i = 0; i < length; i++)
       {
@@ -1472,7 +1472,7 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     {
       // Iterate over array elements
       int array_size = collection->array_size;
-      scope_ *local_scope = init_scope(node->scope);
+      scope_ *local_scope = init_scope(node->scope, "child_scope");
 
       for (int i = 0; i < array_size; i++)
       {
@@ -1534,7 +1534,7 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     ast_ *original_value = deep_copy(node->loop_variable->rhs);
 
     // Initialize the local scope and the loop variable
-    scope_ *local_scope = init_scope(node->scope);
+    scope_ *local_scope = init_scope(node->scope, "child_scope");
     scope_add_variable_definition(local_scope, node->loop_variable);
 
     // Loop based on the step direction (positive or negative)
@@ -1565,7 +1565,7 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
 ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
 {
   // Initialize the local scope
-  scope_ *local_scope = init_scope(node->scope);
+  scope_ *local_scope = init_scope(node->scope, "child_scope");
 
   if (node->indefinite_loop_type == 1) // WHILE loop
   {

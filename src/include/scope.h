@@ -6,10 +6,11 @@ typedef struct SCOPE_STRUCT
 {
   ast_ **instantiation_definitions;
   ast_ **variable_definitions;
+  const char *scope_name;
 
 } scope_;
 
-scope_ *init_scope(scope_ *parent_scope);
+scope_ *init_scope(scope_ *parent_scope, const char *scope_name);
 void set_scope(ast_ *node, scope_ *scope);
 
 scope_ *get_scope(ast_ *node);
