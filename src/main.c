@@ -19,6 +19,7 @@ void print_help()
 int main(int argc, char *argv[])
 {
   clock_t start_time = clock(); // Start the clock
+  srand(time(NULL));
   int debug = 0;
 
   // Check if --debug is present
@@ -44,6 +45,16 @@ int main(int argc, char *argv[])
         // Initialize components
         lexer_ *lexer = init_lexer(file_contents);
         scope_ *scope = init_scope(NULL, "global_scope");
+        // token_ *token = NULL;
+        // if (debug)
+        // {
+        //   printf("**************************LEXER OUTPUT*************************\n");
+        //   while ((token = lexer_next(lexer))->type != TOKEN_EOF)
+        //   {
+        //     printf("{%s::%s}\n", token_type_to_string(token->type), token->value);
+        //   }
+        //   printf("***********************************************************\n");
+        // }
         parser_ *parser = init_parser(lexer, scope);
         interpreter_ *interpreter = init_interpreter();
 

@@ -243,6 +243,382 @@ int compare_ast_literals(ast_ *a, ast_ *b)
   return 0; // Fallback, in case no match was found
 }
 
+ast_ *handle_len_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 1)
+  {
+    fprintf(stderr, "Error: LEN method expects 1 argument, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *arg0 = interpreter_process(interpreter, node->arguments[0]);
+
+  if (arg0->type == AST_ARRAY)
+  {
+    ast_ *return_value = init_ast(AST_INTEGER);
+    return_value->int_value.value = arg0->array_size;
+    return_value->int_value.null = 0;
+    return return_value;
+  }
+  else if (arg0->type == AST_STRING)
+  {
+    ast_ *return_value = init_ast(AST_INTEGER);
+    return_value->int_value.value = strlen(arg0->string_value);
+    return_value->int_value.null = 0;
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: LEN method expects an Array or a String.\n");
+    return NULL;
+  }
+}
+
+ast_ *handle_position_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 2)
+  {
+    fprintf(stderr, "Error: POS method expects 2 arguments, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *arg0 = interpreter_process(interpreter, node->arguments[0]); // The array or string
+  ast_ *arg1 = interpreter_process(interpreter, node->arguments[1]); // The value to find
+  ast_ *return_value = init_ast(AST_INTEGER);
+
+  if (arg0->type == AST_ARRAY && arg1->type == arg0->array_elements[0]->type)
+  {
+    for (int i = 0; i < arg0->array_size; i++)
+    {
+      if (compare_ast_literals(arg0->array_elements[i], arg1) == 1)
+      {
+        return_value->int_value.value = i;
+        return_value->int_value.null = 0;
+        return return_value;
+      }
+    }
+    fprintf(stderr, "Error: Element not found in array.\n");
+    return NULL;
+  }
+  else if (arg0->type == AST_STRING && arg1->type == AST_CHARACTER)
+  {
+    for (int i = 0; i < strlen(arg0->string_value); i++)
+    {
+      if (arg0->string_value[i] == arg1->char_value.value)
+      {
+        return_value->int_value.value = i;
+        return_value->int_value.null = 0;
+        return return_value;
+      }
+    }
+    fprintf(stderr, "Error: Character not found in string.\n");
+    return NULL;
+  }
+  else
+  {
+    fprintf(stderr, "Error: POS method expects an Array or a String.\n");
+    return NULL;
+  }
+}
+
+ast_ *handle_substring_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 3)
+  {
+    fprintf(stderr, "Error: SUBSTRING method expects 3 arguments, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *string = interpreter_process(interpreter, node->arguments[0]);      // The string
+  ast_ *start_value = interpreter_process(interpreter, node->arguments[1]); // Start index
+  ast_ *end_value = interpreter_process(interpreter, node->arguments[2]);   // End index
+
+  if (string->type == AST_STRING && start_value->type == AST_INTEGER && end_value->type == AST_INTEGER)
+  {
+    char *input_string = string->string_value;
+    int start = start_value->int_value.value;
+    int end = end_value->int_value.value + 1;
+    int string_length = strlen(input_string);
+
+    if (start < 0 || start >= string_length || end < 0 || end > string_length || start > end)
+    {
+      fprintf(stderr, "Error: SUBSTRING indices out of bounds or invalid. Start: %d, End: %d, String Length: %d\n", start, end, string_length);
+      return NULL;
+    }
+
+    int substring_length = end - start;
+
+    char *substring = (char *)malloc(substring_length + 1);
+    if (substring == NULL)
+    {
+      fprintf(stderr, "Error: Memory allocation for SUBSTRING failed.\n");
+      exit(1);
+    }
+
+    strncpy(substring, input_string + start, substring_length);
+    substring[substring_length] = '\0'; // Null-terminate the substring
+
+    ast_ *return_value = init_ast(AST_STRING);
+    return_value->string_value = substring;
+
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: SUBSTRING method expects a String followed by 2 integers.\n SUBSTRING(string, integer, integer)\n");
+    return NULL;
+  }
+}
+
+ast_ *handle_slice_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 3)
+  {
+    fprintf(stderr, "Error: SLICE method expects 3 arguments, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *array = interpreter_process(interpreter, node->arguments[0]);       // The array or matrix
+  ast_ *start_value = interpreter_process(interpreter, node->arguments[1]); // Start index
+  ast_ *end_value = interpreter_process(interpreter, node->arguments[2]);   // End index
+
+  if (array->type == AST_ARRAY && start_value->type == AST_INTEGER && end_value->type == AST_INTEGER)
+  {
+    int start = start_value->int_value.value;
+    int end = end_value->int_value.value + 1;
+    int array_size = array->array_size;
+
+    if (start < 0 || start >= array_size || end < 0 || end > array_size || start > end)
+    {
+      fprintf(stderr, "Error: SLICE indices out of bounds or invalid. Start: %d, End: %d, Array Size: %d\n", start, end, array_size);
+      return NULL;
+    }
+
+    ast_ *slice = init_ast(AST_ARRAY);
+    slice->array_elements = init_ast_list();
+
+    for (int i = start; i < end; i++)
+    {
+      ast_ *element = array->array_elements[i];
+      add_ast_to_list(&(slice->array_elements), element); // Add the element to the slice
+    }
+
+    slice->array_size = end - start;
+    slice->type = array->type;
+    slice->array_dimension = array->array_dimension;
+
+    return slice;
+  }
+  else
+  {
+    fprintf(stderr, "Error: SLICE method expects an array followed by 2 integers.\n SLICE(array, integer, integer)\n");
+    return NULL;
+  }
+}
+
+ast_ *handle_string_to_int_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 1)
+  {
+    fprintf(stderr, "Error: STRING_TO_INT method expects 1 argument, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *string_arg = interpreter_process(interpreter, node->arguments[0]);
+  if (string_arg->type == AST_STRING)
+  {
+    int int_value = atoi(string_arg->string_value);
+    ast_ *return_value = init_ast(AST_INTEGER);
+    return_value->int_value.value = int_value;
+    return_value->int_value.null = 0;
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: STRING_TO_INT method expects a string argument.\n");
+    return NULL;
+  }
+}
+ast_ *handle_string_to_real_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 1)
+  {
+    fprintf(stderr, "Error: STRING_TO_REAL method expects 1 argument, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *string_arg = interpreter_process(interpreter, node->arguments[0]);
+  if (string_arg->type == AST_STRING)
+  {
+    double real_value = atof(string_arg->string_value);
+    ast_ *return_value = init_ast(AST_REAL);
+    return_value->real_value.value = real_value;
+    return_value->real_value.null = 0;
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: STRING_TO_REAL method expects a string argument.\n");
+    return NULL;
+  }
+}
+ast_ *handle_int_to_string_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 1)
+  {
+    fprintf(stderr, "Error: INT_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *int_arg = interpreter_process(interpreter, node->arguments[0]);
+  if (int_arg->type == AST_INTEGER)
+  {
+    char buffer[12]; // Buffer large enough to hold any 32-bit integer
+    snprintf(buffer, sizeof(buffer), "%d", int_arg->int_value.value);
+    ast_ *return_value = init_ast(AST_STRING);
+    return_value->string_value = strdup(buffer);
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: INT_TO_STRING method expects an integer argument.\n");
+    return NULL;
+  }
+}
+ast_ *handle_real_to_string_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 1)
+  {
+    fprintf(stderr, "Error: REAL_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *real_arg = interpreter_process(interpreter, node->arguments[0]);
+  if (real_arg->type == AST_REAL)
+  {
+    char buffer[32]; // Buffer large enough to hold any double
+    snprintf(buffer, sizeof(buffer), "%f", real_arg->real_value.value);
+    ast_ *return_value = init_ast(AST_STRING);
+    return_value->string_value = strdup(buffer);
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: REAL_TO_STRING method expects a real argument.\n");
+    return NULL;
+  }
+}
+ast_ *handle_char_to_code_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 1)
+  {
+    fprintf(stderr, "Error: CHAR_TO_CODE method expects 1 argument, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *char_arg = interpreter_process(interpreter, node->arguments[0]);
+  if (char_arg->type == AST_CHARACTER)
+  {
+    int char_code = (int)char_arg->char_value.value; // Convert char to ASCII code
+    ast_ *return_value = init_ast(AST_INTEGER);
+    return_value->int_value.value = char_code;
+    return_value->int_value.null = 0;
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: CHAR_TO_CODE method expects a character argument.\n");
+    return NULL;
+  }
+}
+ast_ *handle_code_to_char_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 1)
+  {
+    fprintf(stderr, "Error: CODE_TO_CHAR method expects 1 argument, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *int_arg = interpreter_process(interpreter, node->arguments[0]);
+  if (int_arg->type == AST_INTEGER)
+  {
+    char char_value = (char)int_arg->int_value.value; // Convert ASCII code to char
+    ast_ *return_value = init_ast(AST_CHARACTER);
+    return_value->char_value.value = char_value;
+    return_value->char_value.null = 0;
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: CODE_TO_CHAR method expects an integer argument.\n");
+    return NULL;
+  }
+}
+ast_ *handle_random_int_method(interpreter_ *interpreter, ast_ *node)
+{
+  if (node->arguments_count != 2)
+  {
+    fprintf(stderr, "Error: RANDOM_INT method expects 2 arguments, but got %d.\n", node->arguments_count);
+    return NULL;
+  }
+
+  ast_ *min_value = interpreter_process(interpreter, node->arguments[0]);
+  ast_ *max_value = interpreter_process(interpreter, node->arguments[1]);
+
+  if (min_value->type == AST_INTEGER && max_value->type == AST_INTEGER)
+  {
+    int min = min_value->int_value.value;
+    int max = max_value->int_value.value;
+
+    // Generate a random integer between min and max (inclusive)
+    int random_value = min + rand() % (max - min + 1);
+
+    ast_ *return_value = init_ast(AST_INTEGER);
+    return_value->int_value.value = random_value;
+    return_value->int_value.null = 0;
+    return return_value;
+  }
+  else
+  {
+    fprintf(stderr, "Error: RANDOM_INT method expects two integer arguments.\n");
+    return NULL;
+  }
+}
+
+// Function to handle field value copying based on type
+ast_ *copy_field_value(ast_ *field_value)
+{
+  ast_ *element = init_ast(field_value->type);
+  switch (field_value->type)
+  {
+  case AST_INTEGER:
+    element->int_value = field_value->int_value;
+    break;
+  case AST_REAL:
+    element->real_value = field_value->real_value;
+    break;
+  case AST_CHARACTER:
+    element->char_value = field_value->char_value;
+    break;
+  case AST_STRING:
+    element->string_value = field_value->string_value;
+    break;
+  case AST_BOOLEAN:
+    element->boolean_value = field_value->boolean_value;
+    break;
+  case AST_ARRAY:
+    element->array_elements = field_value->array_elements;
+    element->array_size = field_value->array_size;
+    element->array_type = field_value->array_type;
+    element->array_dimension = field_value->array_dimension;
+    break;
+  default:
+    fprintf(stderr, "Error: Unsupported type.\n");
+    exit(1);
+  }
+  return element;
+}
+
 interpreter_ *init_interpreter()
 {
   interpreter_ *interpreter = calloc(1, sizeof(struct INTERPRETER_STRUCT));
@@ -485,391 +861,47 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
   // Processing built-in methods
   if (strcmp(node->class_name, "LEN") == 0)
   {
-
-    // Check if the argument count is exactly 1
-    if (node->arguments_count != 1)
-    {
-      fprintf(stderr, "Error: LEN method expects 1 argument, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the argument (assuming it's stored in node->arguments[0])
-    ast_ *arg = interpreter_process(interpreter, node->arguments[0]);
-
-    // Check if the argument is an array or string
-    if (arg->type == AST_ARRAY)
-    {
-      // Return the size of the array
-      ast_ *return_value = init_ast(AST_INTEGER);
-      return_value->int_value.value = arg->array_size;
-      return_value->int_value.null = 0;
-      return return_value;
-    }
-    else if (arg->type == AST_STRING)
-    {
-      // Return the length of the string
-      ast_ *return_value = init_ast(AST_INTEGER);
-      return_value->int_value.value = strlen(arg->string_value);
-      return_value->int_value.null = 0;
-      return return_value;
-    }
-    else
-    {
-      // Invalid argument type
-      fprintf(stderr, "Error: LEN method expects an array or a string.\n");
-      return NULL;
-    }
+    return handle_len_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "POSITION") == 0)
   {
-    // Check if the argument count is exactly 2
-    if (node->arguments_count != 2)
-    {
-      fprintf(stderr, "Error: POS method expects 2 arguments, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the arguments
-    ast_ *arg0 = interpreter_process(interpreter, node->arguments[0]); // The array or string
-    ast_ *arg1 = interpreter_process(interpreter, node->arguments[1]); // The value to find
-
-    // Check if arg0 is an array and arg1 has the same type as the first element of the array
-    if (arg0->type == AST_ARRAY && arg1->type == arg0->array_elements[0]->type)
-    {
-      for (int i = 0; i < arg0->array_size; i++)
-      {
-        // Assuming you have a function to compare array elements
-        if (compare_ast_literals(arg0->array_elements[i], arg1) == 1)
-        {
-          ast_ *return_value = init_ast(AST_INTEGER);
-          return_value->int_value.value = i;
-          return_value->int_value.null = 0;
-          return return_value;
-        }
-      }
-      // If element is not found, return an error or a special value (-1)
-      fprintf(stderr, "Error: Element not found in array.\n");
-
-      return NULL;
-    }
-    // Check if arg0 is a string and arg1 is a character
-    else if (arg0->type == AST_STRING && arg1->type == AST_CHARACTER)
-    {
-      for (int i = 0; i < strlen(arg0->string_value); i++)
-      {
-        if (arg0->string_value[i] == arg1->char_value.value)
-        {
-          ast_ *return_value = init_ast(AST_INTEGER);
-          return_value->int_value.value = i;
-          return_value->int_value.null = 0;
-          return return_value;
-        }
-      }
-      // If character is not found, return an error or a special value (-1)
-      fprintf(stderr, "Error: Character not found in string.\n");
-      return NULL;
-    }
-    else
-    {
-      // Invalid argument types
-      fprintf(stderr, "Error: POS method expects an array or a string.\n");
-      return NULL;
-    }
+    return handle_position_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "SUBSTRING") == 0)
   {
-    // Check if the argument count is exactly 3
-    if (node->arguments_count != 3)
-    {
-      fprintf(stderr, "Error: SUBSTRING method expects 3 arguments, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the arguments
-    ast_ *string = interpreter_process(interpreter, node->arguments[0]);      // The string
-    ast_ *start_value = interpreter_process(interpreter, node->arguments[1]); // Start index
-    ast_ *end_value = interpreter_process(interpreter, node->arguments[2]);   // End index
-
-    // Validate argument types: the first argument must be a string, the others must be integers
-    if (string->type == AST_STRING && start_value->type == AST_INTEGER && end_value->type == AST_INTEGER)
-    {
-      // Get the string, start, and end values
-      char *input_string = string->string_value;
-      int start = start_value->int_value.value;
-      int end = end_value->int_value.value + 1;
-      int string_length = strlen(input_string);
-
-      // Validate the start and end values to ensure they are within the string bounds
-      if (start < 0 || start >= string_length || end < 0 || end > string_length || start > end)
-      {
-        fprintf(stderr, "Error: SUBSTRING indices out of bounds or invalid. Start: %d, End: %d, String Length: %d\n", start, end, string_length);
-        return NULL;
-      }
-
-      // Calculate the length of the substring
-      int substring_length = end - start;
-
-      // Allocate memory for the new substring
-      char *substring = (char *)malloc(substring_length + 1);
-      if (substring == NULL)
-      {
-        fprintf(stderr, "Error: Memory allocation for SUBSTRING failed.\n");
-        exit(1);
-      }
-
-      // Copy the substring from the input string
-      strncpy(substring, input_string + start, substring_length);
-      substring[substring_length] = '\0'; // Null-terminate the substring
-
-      // Create an AST node for the substring result
-      ast_ *return_value = init_ast(AST_STRING);
-      return_value->string_value = substring;
-
-      return return_value;
-    }
-    else
-    {
-      // Invalid argument types
-      fprintf(stderr, "Error: SUBSTRING method expects a string followed by 2 integers.\n SUBSTRING(string, integer, integer)\n");
-      return NULL;
-    }
+    return handle_substring_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "SLICE") == 0)
   {
-    // Check if the argument count is exactly 3
-    if (node->arguments_count != 3)
-    {
-      fprintf(stderr, "Error: SLICE method expects 3 arguments, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the arguments
-    ast_ *array = interpreter_process(interpreter, node->arguments[0]);       // The array or matrix
-    ast_ *start_value = interpreter_process(interpreter, node->arguments[1]); // Start index
-    ast_ *end_value = interpreter_process(interpreter, node->arguments[2]);   // End index
-
-    // Validate argument types: the first argument must be an array, the others must be integers
-    if (array->type == AST_ARRAY && start_value->type == AST_INTEGER && end_value->type == AST_INTEGER)
-    {
-      // Get the start, end, and array details
-      int start = start_value->int_value.value;
-      int end = end_value->int_value.value + 1;
-      int array_size = array->array_size;
-
-      // Validate the start and end values to ensure they are within the array bounds
-      if (start < 0 || start >= array_size || end < 0 || end > array_size || start > end)
-      {
-        fprintf(stderr, "Error: SLICE indices out of bounds or invalid. Start: %d, End: %d, Array Size: %d\n", start, end, array_size);
-        return NULL;
-      }
-
-      // Initialize the new array slice
-      ast_ *slice = init_ast(AST_ARRAY);
-      slice->array_elements = init_ast_list(); // Initialize the list of array elements
-
-      // Iterate through the original array and add the slice elements
-      for (int i = start; i < end; i++)
-      {
-        ast_ *element = array->array_elements[i];
-        add_ast_to_list(&(slice->array_elements), element); // Add the element to the slice
-      }
-
-      // Set the size of the slice
-      slice->array_size = end - start;
-
-      return slice;
-    }
-    else
-    {
-      // Invalid argument types
-      fprintf(stderr, "Error: SLICE method expects an array followed by 2 integers.\n SLICE(array, integer, integer)\n");
-      return NULL;
-    }
+    return handle_slice_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "STRING_TO_INT") == 0)
   {
-    // Check if the argument count is exactly 1
-    if (node->arguments_count != 1)
-    {
-      fprintf(stderr, "Error: STRING_TO_INT method expects 1 argument, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the argument and check if it’s a string
-    ast_ *string_arg = interpreter_process(interpreter, node->arguments[0]);
-    if (string_arg->type == AST_STRING)
-    {
-      int int_value = atoi(string_arg->string_value); // Convert string to integer
-      ast_ *return_value = init_ast(AST_INTEGER);
-      return_value->int_value.value = int_value;
-      return_value->int_value.null = 0;
-      return return_value;
-    }
-    else
-    {
-      fprintf(stderr, "Error: STRING_TO_INT method expects a string argument.\n");
-      return NULL;
-    }
+    return handle_string_to_int_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "STRING_TO_REAL") == 0)
   {
-    // Check if the argument count is exactly 1
-    if (node->arguments_count != 1)
-    {
-      fprintf(stderr, "Error: STRING_TO_REAL method expects 1 argument, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the argument and check if it’s a string
-    ast_ *string_arg = interpreter_process(interpreter, node->arguments[0]);
-    if (string_arg->type == AST_STRING)
-    {
-      double real_value = atof(string_arg->string_value); // Convert string to real (double)
-      ast_ *return_value = init_ast(AST_REAL);
-      return_value->real_value.value = real_value;
-      return_value->real_value.null = 0;
-      return return_value;
-    }
-    else
-    {
-      fprintf(stderr, "Error: STRING_TO_REAL method expects a string argument.\n");
-      return NULL;
-    }
+    return handle_string_to_real_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "INT_TO_STRING") == 0)
   {
-    // Check if the argument count is exactly 1
-    if (node->arguments_count != 1)
-    {
-      fprintf(stderr, "Error: INT_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the argument and check if it’s an integer
-    ast_ *int_arg = interpreter_process(interpreter, node->arguments[0]);
-    if (int_arg->type == AST_INTEGER)
-    {
-      char buffer[12];                                                  // Buffer large enough to hold any 32-bit integer
-      snprintf(buffer, sizeof(buffer), "%d", int_arg->int_value.value); // Convert integer to string
-      ast_ *return_value = init_ast(AST_STRING);
-      return_value->string_value = strdup(buffer); // Copy the result string
-      return return_value;
-    }
-    else
-    {
-      fprintf(stderr, "Error: INT_TO_STRING method expects an integer argument.\n");
-      return NULL;
-    }
+    return handle_int_to_string_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "REAL_TO_STRING") == 0)
   {
-    // Check if the argument count is exactly 1
-    if (node->arguments_count != 1)
-    {
-      fprintf(stderr, "Error: REAL_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the argument and check if it’s a real (float/double)
-    ast_ *real_arg = interpreter_process(interpreter, node->arguments[0]);
-    if (real_arg->type == AST_REAL)
-    {
-      char buffer[32];                                                    // Buffer large enough to hold any double
-      snprintf(buffer, sizeof(buffer), "%f", real_arg->real_value.value); // Convert real to string
-      ast_ *return_value = init_ast(AST_STRING);
-      return_value->string_value = strdup(buffer); // Copy the result string
-      return return_value;
-    }
-    else
-    {
-      fprintf(stderr, "Error: REAL_TO_STRING method expects a real argument.\n");
-      return NULL;
-    }
+    return handle_real_to_string_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "CHAR_TO_CODE") == 0)
   {
-    // Check if the argument count is exactly 1
-    if (node->arguments_count != 1)
-    {
-      fprintf(stderr, "Error: CHAR_TO_CODE method expects 1 argument, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the argument and check if it’s a character
-    ast_ *char_arg = interpreter_process(interpreter, node->arguments[0]);
-    if (char_arg->type == AST_CHARACTER)
-    {
-      int char_code = (int)char_arg->char_value.value; // Convert char to ASCII code
-      ast_ *return_value = init_ast(AST_INTEGER);
-      return_value->int_value.value = char_code;
-      return_value->int_value.null = 0;
-      return return_value;
-    }
-    else
-    {
-      fprintf(stderr, "Error: CHAR_TO_CODE method expects a character argument.\n");
-      return NULL;
-    }
+    return handle_char_to_code_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "CODE_TO_CHAR") == 0)
   {
-    // Check if the argument count is exactly 1
-    if (node->arguments_count != 1)
-    {
-      fprintf(stderr, "Error: CODE_TO_CHAR method expects 1 argument, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the argument and check if it’s an integer (ASCII code)
-    ast_ *int_arg = interpreter_process(interpreter, node->arguments[0]);
-    if (int_arg->type == AST_INTEGER)
-    {
-      char char_value = (char)int_arg->int_value.value; // Convert ASCII code to char
-      ast_ *return_value = init_ast(AST_CHARACTER);
-      return_value->char_value.value = char_value;
-      return_value->char_value.null = 0;
-      return return_value;
-    }
-    else
-    {
-      fprintf(stderr, "Error: CODE_TO_CHAR method expects an integer argument.\n");
-      return NULL;
-    }
+    return handle_code_to_char_method(interpreter, node);
   }
   else if (strcmp(node->class_name, "RANDOM_INT") == 0)
   {
-    // Check if the argument count is exactly 2
-    if (node->arguments_count != 2)
-    {
-      fprintf(stderr, "Error: RANDOM_INT method expects 2 arguments, but got %d.\n", node->arguments_count);
-      return NULL;
-    }
-
-    // Retrieve the arguments and check if they are integers
-    ast_ *min_value = interpreter_process(interpreter, node->arguments[0]);
-    ast_ *max_value = interpreter_process(interpreter, node->arguments[1]);
-
-    if (min_value->type == AST_INTEGER && max_value->type == AST_INTEGER)
-    {
-      int min = min_value->int_value.value;
-      int max = max_value->int_value.value;
-
-      // Seed the random number generator if necessary (e.g., in program initialization)
-      srand(time(NULL)); // Ensure this is called only once in your program's lifecycle
-
-      // Generate a random integer between min and max (inclusive)
-      int random_value = min + rand() % (max - min + 1);
-
-      ast_ *return_value = init_ast(AST_INTEGER);
-      return_value->int_value.value = random_value;
-      return_value->int_value.null = 0;
-      return return_value;
-    }
-    else
-    {
-      fprintf(stderr, "Error: RANDOM_INT method expects two integer arguments.\n");
-      return NULL;
-    }
+    return handle_random_int_method(interpreter, node);
   }
 
   // Use scope_get_instantiation_definition to find the record definition
@@ -888,12 +920,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     exit(1);
   }
 
-  if (inst_definition->type == AST_RECORD_DEFINITION && (node->arguments_count != inst_definition->field_count))
-  {
-    printf("Error: Mismatched number of arguments for record instantiation '%s'.\n", node->class_name);
-    exit(1);
-  }
-  else if (inst_definition->type == AST_SUBROUTINE && (node->arguments_count != inst_definition->parameter_count))
+  if (inst_definition->type == AST_SUBROUTINE && (node->arguments_count != inst_definition->parameter_count))
   {
     printf("Error: Mismatched number of arguments for subroutine instantiation '%s'.\n", node->class_name);
     exit(1);
@@ -907,70 +934,72 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
     new_record->record_elements = (ast_record_element_ **)init_ast_list();
     new_record->field_count = 0;
 
-    // Assign the values from the arguments to the corresponding fields
-    for (int i = 0; i < node->arguments_count; i++)
+    if (node->arguments_count != inst_definition->field_count)
     {
-      ast_ *arg = interpreter_process(interpreter, node->arguments[i]);
+      int j = 0;
 
-      // Check if the types match or if the argument is an array and its type and dimensions match
-      if ((arg->type == inst_definition->record_elements[i]->element->type) ||
-          (arg->type == AST_ARRAY &&
-           arg->array_type == inst_definition->record_elements[i]->element->type &&
-           arg->array_dimension == inst_definition->record_elements[i]->dimension))
+      // Iterate over record fields
+      for (int i = 0; i < inst_definition->field_count; i++)
       {
-        // Allocate memory for the record element
-        ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
-        if (!record_element)
-        {
-          printf("Memory allocation error.\n");
-          exit(1);
-        }
-        // Set the element name from the instantiation definition
-        record_element->element_name = inst_definition->record_elements[i]->element_name;
+        ast_record_element_ *inst_field = inst_definition->record_elements[i];
+        ast_ *field_value = NULL;
 
-        // Initialize the value element based on the argument's type
-        ast_ *element = init_ast(arg->type);
-        switch (element->type)
+        // Find matching argument or use default value
+        if (j < node->arguments_count && strcmp(node->arguments[j]->lhs->variable_name, inst_field->element_name) == 0)
         {
-        case AST_INTEGER:
-          element->int_value = arg->int_value;
-          break;
-        case AST_REAL:
-          element->real_value = arg->real_value;
-          break;
-        case AST_CHARACTER:
-          element->char_value = arg->char_value;
-          break;
-        case AST_STRING:
-          element->string_value = arg->string_value;
-          break;
-        case AST_BOOLEAN:
-          element->boolean_value = arg->boolean_value;
-          break;
-        case AST_ARRAY:
-          // Handle arrays by copying elements, size, and dimension
-          element->array_elements = arg->array_elements;
-          element->array_size = arg->array_size;
-          element->array_type = arg->array_type;
-          element->array_dimension = arg->array_dimension;
-          break;
-        default:
-          fprintf(stderr, "Error: Unsupported type for record instantiation.\n");
-          exit(1);
+          field_value = interpreter_process(interpreter, node->arguments[j]->rhs);
+          j++; // Move to next argument
+        }
+        else
+        {
+          field_value = interpreter_process(interpreter, inst_field->element);
         }
 
-        // Assign the element to the record element
-        record_element->element = element;
-        record_element->dimension = (element->type == AST_ARRAY) ? element->array_dimension : 0;
+        // Type and dimension check
+        if ((field_value->type == inst_field->element->type) ||
+            (field_value->type == AST_ARRAY && field_value->array_type == inst_field->element->type &&
+             field_value->array_dimension == inst_field->dimension))
+        {
+          ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
+          if (!record_element)
+            exit(1);
 
-        // Add the record element to the list of record elements
-        add_ast_to_list((ast_ ***)&new_record->record_elements, (ast_ *)record_element);
-        new_record->field_count++;
+          record_element->element_name = inst_field->element_name;
+          record_element->element = copy_field_value(field_value);
+          record_element->dimension = (field_value->type == AST_ARRAY) ? field_value->array_dimension : 0;
+
+          add_ast_to_list((ast_ ***)&new_record->record_elements, (ast_ *)record_element);
+          new_record->field_count++;
+        }
+        else
+        {
+          printf("Error: Mismatched type or dimension for field '%s'.\n", inst_field->element_name);
+          exit(1);
+        }
       }
-      else
+    }
+    else
+    {
+      // Handle exact match in argument count and field count
+      for (int i = 0; i < node->arguments_count; i++)
       {
-        printf("Error: Mismatched type or dimension for argument %d in record instantiation '%s'.\n", i + 1, node->class_name);
-        exit(1);
+        ast_ *arg = interpreter_process(interpreter, node->arguments[i]);
+
+        if ((arg->type == inst_definition->record_elements[i]->element->type) ||
+            (arg->type == AST_ARRAY && arg->array_type == inst_definition->record_elements[i]->element->type &&
+             arg->array_dimension == inst_definition->record_elements[i]->dimension))
+        {
+          ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
+          if (!record_element)
+            exit(1);
+
+          record_element->element_name = inst_definition->record_elements[i]->element_name;
+          record_element->element = arg;
+          record_element->dimension = (arg->type == AST_ARRAY) ? arg->array_dimension : 0;
+
+          add_ast_to_list((ast_ ***)&new_record->record_elements, (ast_ *)record_element);
+          new_record->field_count++;
+        }
       }
     }
 

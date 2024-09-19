@@ -773,8 +773,8 @@ void print_ast(ast_ *node, int indent)
       print_indent(indent + 1);
       printf("Field: %s\n", node->record_elements[d]->element_name);
       print_indent(indent + 2);
-      printf("Type:\n");
-      printf("%s\n", ast_type_to_string(node->record_elements[d]->element->type));
+      printf("Element:\n");
+      print_ast(node->record_elements[d]->element, indent + 3);
       print_indent(indent + 2);
       printf("Dimension: %d\n", node->record_elements[d]->dimension);
       d++;

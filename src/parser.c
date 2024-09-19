@@ -156,13 +156,38 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
     expression->class_name = variable_name;
     expression->arguments = init_ast_list();
     parser_expect(parser, TOKEN_LPAREN); // Consume '('
+
     if (parser->current_token->type != TOKEN_RPAREN)
     {
       do
       {
-        ast_ *arg = parse_expression(parser, scope);
+        ast_ *arg = NULL;
+
+        if (parser->current_token->type == TOKEN_ID && lexer_peek(parser->lexer)->type == TOKEN_COLON)
+        {
+          // Handle specified arguments like `make: 'Mazda'` as AST_ASSIGNMENT
+          char *arg_name = parser->current_token->value; // Store the argument name
+          parser_expect(parser, TOKEN_ID);               // Consume the argument name
+          parser_expect(parser, TOKEN_COLON);            // Consume ':'
+
+          ast_ *arg_value = parse_expression(parser, scope); // Parse the argument value
+
+          // Create an AST_ASSIGNMENT node
+          arg = init_ast(AST_ASSIGNMENT);
+          arg->lhs = init_ast(AST_VARIABLE);
+          arg->lhs->variable_name = arg_name; // Variable being assigned
+          arg->rhs = arg_value;               // The value being assigned
+        }
+        else
+        {
+          // Handle positional arguments
+          arg = parse_expression(parser, scope);
+        }
+
+        // Add the argument (either assignment or positional) to the arguments list
         add_ast_to_list(&(expression->arguments), arg);
         expression->arguments_count++;
+
         if (parser->current_token->type == TOKEN_COMMA)
         {
           parser_expect(parser, TOKEN_COMMA); // Consume ','
@@ -173,6 +198,7 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
         }
       } while (parser->current_token->type != TOKEN_RPAREN);
     }
+
     parser_expect(parser, TOKEN_RPAREN); // Consume ')'
   }
   // Handle simple variable or constant
@@ -183,6 +209,7 @@ ast_ *parse_variable_or_access(parser_ *parser, scope_ *scope)
     expression->constant = is_constant;
     expression->userinput = is_userinput;
   }
+
   set_scope(expression, scope);
   return expression;
 }
@@ -726,6 +753,8 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
   ast_ *record_ast = init_ast(AST_RECORD_DEFINITION);
   record_ast->record_name = record_name;
 
+  printf("Creating Record Definition for %s\n", record_name);
+
   // Initialize the record elements list
   record_ast->record_elements = (ast_record_element_ **)init_ast_list();
 
@@ -737,34 +766,35 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
     // Handle the field name
     char *field_name = parser->current_token->value;
     parser_expect(parser, TOKEN_ID); // Consume the field name
+    printf("Field name: %s\n", field_name);
 
     // Expect and handle the colon
     parser_expect(parser, TOKEN_COLON); // Consume ':'
 
-    // Parse the field type
-    ast_ *field_type_ast = NULL;
+    // Parse the field
+    ast_ *field_ast = NULL;
     int dimension = 0; // Initialize dimension counter
 
     // Determine the type of the field
     if (strcmp(parser->current_token->value, "String") == 0)
     {
-      field_type_ast = init_ast(AST_STRING);
+      field_ast = init_ast(AST_STRING);
     }
     else if (strcmp(parser->current_token->value, "Integer") == 0)
     {
-      field_type_ast = init_ast(AST_INTEGER);
+      field_ast = init_ast(AST_INTEGER);
     }
     else if (strcmp(parser->current_token->value, "Real") == 0)
     {
-      field_type_ast = init_ast(AST_REAL);
+      field_ast = init_ast(AST_REAL);
     }
     else if (strcmp(parser->current_token->value, "Boolean") == 0)
     {
-      field_type_ast = init_ast(AST_BOOLEAN);
+      field_ast = init_ast(AST_BOOLEAN);
     }
     else if (strcmp(parser->current_token->value, "Char") == 0)
     {
-      field_type_ast = init_ast(AST_CHARACTER);
+      field_ast = init_ast(AST_CHARACTER);
     }
     else
     {
@@ -782,10 +812,56 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
       parser_expect(parser, TOKEN_RBRACKET); // Consume ']'
     }
 
+    // Check for an optional default value after the '|'
+    if (parser->current_token->type == TOKEN_PIPE)
+    {
+      parser_expect(parser, TOKEN_PIPE); // Consume '|'
+
+      // Parse the default value based on the field type
+      if (dimension > 0) // If dimension > 0, it's an array, parse it as such
+      {
+        field_ast = parse_array(parser, scope);
+      }
+      else if (field_ast->type == AST_STRING)
+      {
+        field_ast->string_value = parser->current_token->value; // Store default value as string
+        parser_expect(parser, TOKEN_STRING);
+      }
+      else if (field_ast->type == AST_INTEGER)
+      {
+        field_ast->int_value.value = atoi(parser->current_token->value); // Convert string to integer
+        field_ast->int_value.null = 0;
+        parser_expect(parser, TOKEN_INT);
+      }
+      else if (field_ast->type == AST_REAL)
+      {
+        field_ast->real_value.value = atof(parser->current_token->value); // Convert string to real
+        field_ast->real_value.null = 0;
+        parser_expect(parser, TOKEN_REAL);
+      }
+      else if (field_ast->type == AST_BOOLEAN)
+      {
+        field_ast->boolean_value.value = strcmp(parser->current_token->value, "True") == 0;
+        field_ast->boolean_value.null = 0;
+        parser_expect(parser, TOKEN_BOOL);
+      }
+      else if (field_ast->type == AST_CHARACTER)
+      {
+        field_ast->char_value.value = parser->current_token->value[0]; // Convert string to character
+        field_ast->char_value.null = 0;
+        parser_expect(parser, TOKEN_CHAR);
+      }
+      else
+      {
+        fprintf(stderr, "Default value for type %s is not supported.\n", parser->current_token->value);
+        exit(1);
+      }
+    }
+
     // Create the record element AST node
     ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
     record_element->element_name = field_name;
-    record_element->element = field_type_ast;
+    record_element->element = field_ast;
     record_element->dimension = dimension; // Assign the dimension here
 
     // Add the record element to the record's list

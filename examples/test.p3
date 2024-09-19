@@ -1,119 +1,26 @@
-# This program demonstrates various elements of AQA pseudo-code
-
-# Constants
-CONSTANT PI <- 3.14159
-CONSTANT MAX_STUDENTS <- 30
-CONSTANT SPEED_OF_LIGHT <- 3e+8
-
-# Variables
-name <- 'Alice'
-age <- 16
-score <- 95.5
-isPassed <- True
-
-# Arrays
-scores <- [85, 90, 88, 92, 95]
-
-table <- [[1,2],[2,4],[3,6],[4,8]]
-table[3][1] <- 16
-OUTPUT table[3][2]
-
-# Records
-RECORD Student
-   name : String
-   age : Integer
-   score : Real
-   passed : Boolean
+RECORD Wheel
+   diameter : Integer | 10
+   tread_depth : Real | 1.6
+   manufacturer : String | "Unknown"
 ENDRECORD
 
-# Create a student record
-student1 <- Student('Bob', 17, 89.5, True)
+RECORD Car
+  make : String | "undefined"
+  model : String | "undefined"
+  reg : String | "undefined"
+  price : Real | "1000"
+  noOfDoors : Integer | 5
+  wheel_type : Wheel | "undefined"
+ENDRECORD
 
-# Subroutines
-SUBROUTINE printStudentDetails(student)
-   OUTPUT 'Name: ', student.name
-   OUTPUT 'Age: ', student.age
-   OUTPUT 'Score: ', student.score
-   OUTPUT 'Passed: ', student.passed
-ENDSUBROUTINE
+myCar <- Car('Ford', 'Focus', 'DX17 GYT', 1399.99, 5)
 
-# Function to calculate the average score
-SUBROUTINE calculateAverage(scores)
-   total <- 0
-   FOR score IN scores
-      total <- total + score
-   ENDFOR
-   RETURN total DIV LEN(scores)
-ENDSUBROUTINE
+OUTPUT myCar
 
-# Main Program
+OUTPUT myCar.model
 
-# Random number generation
-randomIndex <- RANDOM_INT(0, LEN(scores) - 1)
-OUTPUT 'Random score selected: ', scores[randomIndex]
+myVan <- Car(make: 'Mazda', reg: 'MJ67 KYU', noOfDoors: 3)
 
-# Type Conversion
-stringAge <- INT_TO_STRING(age)
-OUTPUT 'Converted age to string: ', stringAge
+OUTPUT myVan
 
-# String handling
-greeting <- 'Hello, ' + name
-OUTPUT greeting
-
-# Relational and Boolean Operations
-IF age >= 18 THEN
-   OUTPUT 'You are an adult.'
-ELSE IF age >= 13 AND age < 18 THEN
-   OUTPUT 'You are a teenager.'
-ELSE
-   OUTPUT 'You are a child.'
-ENDIF
-
-# Iteration - Indefinite
-counter <- 0
-WHILE counter < 3
-   OUTPUT 'Counter: ', counter
-   counter <- counter + 1
-ENDWHILE
-
-input <- USERINPUT
-
-# Iteration - Definite
-FOR i <- 1 TO input
-   OUTPUT 'Number: ', i
-ENDFOR
-
-# Nested IF-ELSEIF
-IF score >= 90 THEN
-   OUTPUT 'A'
-ELSE IF score >= 80 THEN
-   OUTPUT 'B'
-ELSE IF score >= 70 THEN
-   OUTPUT 'C'
-ELSE
-   OUTPUT 'D'
-ENDIF
-
-# Subroutine Call
-printStudentDetails(student1)
-
-# Calculate and output average score
-averageScore <- calculateAverage(scores)
-OUTPUT 'Average Score: ', averageScore
-
-SUBROUTINE printHello()
-  OUTPUT "Hello" + "World"
-ENDSUBROUTINE
-
-SUBROUTINE isEven(a)
-  IF a MOD 2 = 0 THEN
-    RETURN True
-  ENDIF
-  RETURN False
-ENDSUBROUTINE
-
-bond <- add(3,7)
-printHello()
-OUTPUT isEven(10)
-
-OUTPUT bond
+OUTPUT myVan.model

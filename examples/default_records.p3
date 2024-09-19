@@ -1,27 +1,23 @@
 RECORD Car
   make : String | "undefined"
   model : String | "undefined"
-  reg : String | "undefined"
-  price : Real | "1000"
+  reg : String
+  price : Real | 10.00
   noOfDoors : Integer | 5
+  testArray : Integer[] | [1,2,3]
+  testMatrix : Char[][] | [['a'], ['b']]
 ENDRECORD
 
-myCar <- Car('Ford', 'Focus', 'DX17 GYT', 1399.99, 5)
+myCar <- Car('Ford', 'Focus', 'DX17 GYT', 1399.99, 5, [1,2,3,4], [['x'], ['y'], ['z']])
 
-{
-  make: 'Ford',
-  model: 'Focus',
-  reg: 'DX17 GYT',
-  price: 1399.99,
-  noOfDoors: 5
-}
+OUTPUT myCar
+
+OUTPUT myCar.model
 
 myVan <- Car(make: 'Mazda', reg: 'MJ67 KYU', noOfDoors: 3)
 
-{
-  make: 'Mazda',
-  model: 'undefined',
-  reg: 'MJ67 KYU',
-  price: 1000.00,
-  noOfDoors: 3
-}
+OUTPUT myVan
+
+OUTPUT myVan.model
+
+OUTPUT LEN(myVan.testMatrix)

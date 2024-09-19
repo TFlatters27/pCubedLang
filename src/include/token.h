@@ -22,7 +22,8 @@ enum token_type
   TOKEN_COMMA = 1 << 16,     // 65536 : ,
   TOKEN_COLON = 1 << 17,     // 131072 : :
   TOKEN_FULLSTOP = 1 << 18,  // 262144 : .
-  TOKEN_EOF = 1 << 19        // 524288 : ^D
+  TOKEN_PIPE = 1 << 19,      // 524288 : |
+  TOKEN_EOF = 1 << 20        // 1048576 : ^D
 };
 
 typedef struct TOKEN_STRUCT

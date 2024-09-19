@@ -185,6 +185,8 @@ token_ *lexer_next(lexer_ *lexer)
       return lexer_collect_token(lexer, init_token(TOKEN_COLON, lexer_get_char_as_string(lexer)));
     case '.':
       return lexer_collect_token(lexer, init_token(TOKEN_FULLSTOP, lexer_get_char_as_string(lexer)));
+    case '|':
+      return lexer_collect_token(lexer, init_token(TOKEN_PIPE, lexer_get_char_as_string(lexer)));
     }
   }
 

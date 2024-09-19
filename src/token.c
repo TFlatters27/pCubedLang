@@ -30,6 +30,7 @@ const char *token_type_to_string(enum token_type types)
       {TOKEN_COMMA, "COMMA"},
       {TOKEN_COLON, "COLON"},
       {TOKEN_FULLSTOP, "FULLSTOP"},
+      {TOKEN_PIPE, "PIPE"},
       {TOKEN_EOF, "END OF FILE"}};
 
   int remaining_bits = types;
