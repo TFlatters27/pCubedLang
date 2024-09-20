@@ -601,16 +601,72 @@ ast_ *copy_field_value(ast_ *field_value)
     element->char_value = field_value->char_value;
     break;
   case AST_STRING:
-    element->string_value = field_value->string_value;
+    element->string_value = strdup(field_value->string_value); // Deep copy the string
+    if (!element->string_value)
+    {
+      fprintf(stderr, "Error: Failed to allocate memory for string copy.\n");
+      exit(1);
+    }
     break;
   case AST_BOOLEAN:
     element->boolean_value = field_value->boolean_value;
     break;
   case AST_ARRAY:
-    element->array_elements = field_value->array_elements;
     element->array_size = field_value->array_size;
     element->array_type = field_value->array_type;
     element->array_dimension = field_value->array_dimension;
+
+    // Deep copy array elements
+    element->array_elements = (ast_ **)malloc(field_value->array_size * sizeof(ast_ *));
+    if (!element->array_elements)
+    {
+      fprintf(stderr, "Error: Failed to allocate memory for array copy.\n");
+      exit(1);
+    }
+    for (int i = 0; i < field_value->array_size; i++)
+    {
+      element->array_elements[i] = copy_field_value(field_value->array_elements[i]);
+    }
+    break;
+  case AST_RECORD:
+    element->record_name = strdup(field_value->record_name); // Copy the record name
+    if (!element->record_name)
+    {
+      fprintf(stderr, "Error: Failed to allocate memory for record name copy.\n");
+      exit(1);
+    }
+
+    element->field_count = field_value->field_count;
+    element->record_elements = (ast_record_element_ **)malloc(field_value->field_count * sizeof(ast_record_element_ *));
+    if (!element->record_elements)
+    {
+      fprintf(stderr, "Error: Failed to allocate memory for record elements copy.\n");
+      exit(1);
+    }
+
+    // Deep copy each record element
+    for (int i = 0; i < field_value->field_count; i++)
+    {
+      ast_record_element_ *src_field = field_value->record_elements[i];
+      ast_record_element_ *dst_field = malloc(sizeof(ast_record_element_));
+      if (!dst_field)
+      {
+        fprintf(stderr, "Error: Failed to allocate memory for record field copy.\n");
+        exit(1);
+      }
+
+      dst_field->element_name = strdup(src_field->element_name); // Copy field name
+      if (!dst_field->element_name)
+      {
+        fprintf(stderr, "Error: Failed to allocate memory for field name copy.\n");
+        exit(1);
+      }
+
+      dst_field->element = copy_field_value(src_field->element); // Deep copy the field value
+      dst_field->dimension = src_field->dimension;
+
+      element->record_elements[i] = dst_field;
+    }
     break;
   default:
     fprintf(stderr, "Error: Unsupported type.\n");

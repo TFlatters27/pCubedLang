@@ -101,7 +101,8 @@
 
 - [ ] Implement operation precedence for expressions
 - [x] Add EXIT keyword for programatic use and also REPL mode
-- [ ] Add multi nesting of records
+- [x] Add multi nesting of records
 - [x] Add default values in record fields
 - [x] Have named scopes
 - [x] Printing of arrays and records
+- [ ] More informative error messages

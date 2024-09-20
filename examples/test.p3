@@ -14,7 +14,7 @@ RECORD Car
   wheel_type : Wheel | {diameter: 5, tread_depth: 1.5, manufacturer: "Tires ltd", testArray: [9,11,13]}
 ENDRECORD
 
-carWheel <- Wheel(16, 2.1, "Goodyear")
+carWheel <- Wheel(diameter: 16, tread_depth: 2.1, manufacturer: 'Goodyear')
 
 OUTPUT carWheel # Wheel {diameter: 16, tread_depth: 2.1, manufacturer: "Goodyear"}
 
