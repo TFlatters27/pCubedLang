@@ -753,8 +753,6 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
   ast_ *record_ast = init_ast(AST_RECORD_DEFINITION);
   record_ast->record_name = record_name;
 
-  printf("Creating Record Definition for %s\n", record_name);
-
   // Initialize the record elements list
   record_ast->record_elements = (ast_record_element_ **)init_ast_list();
 
@@ -766,7 +764,6 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
     // Handle the field name
     char *field_name = parser->current_token->value;
     parser_expect(parser, TOKEN_ID); // Consume the field name
-    printf("Field name: %s\n", field_name);
 
     // Expect and handle the colon
     parser_expect(parser, TOKEN_COLON); // Consume ':'
@@ -798,10 +795,9 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
     }
     else
     {
-      fprintf(stderr, "Unknown type: %s\n", parser->current_token->value);
-      exit(1);
+      field_ast = init_ast(AST_RECORD);
     }
-
+    char *field_type = parser->current_token->value;
     parser_expect(parser, TOKEN_ID); // Consume the type
 
     // Handle multi-dimensional arrays by counting the dimensions
@@ -850,6 +846,76 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
         field_ast->char_value.value = parser->current_token->value[0]; // Convert string to character
         field_ast->char_value.null = 0;
         parser_expect(parser, TOKEN_CHAR);
+      }
+      else if (field_ast->type == AST_RECORD)
+      {
+        field_ast->record_name = field_type;
+        field_ast->record_elements = (ast_record_element_ **)init_ast_list();
+
+        parser_expect(parser, TOKEN_LBRACE);
+        while (parser->current_token->type != TOKEN_RBRACE)
+        {
+          char *nested_field_name = parser->current_token->value;
+          parser_expect(parser, TOKEN_ID);    // Consume the nested field name
+          parser_expect(parser, TOKEN_COLON); // Consume ':'
+
+          ast_ *nested_field_ast = NULL;
+
+          switch (parser->current_token->type)
+          {
+          case TOKEN_STRING:
+            nested_field_ast = init_ast(AST_STRING);
+            nested_field_ast->string_value = parser->current_token->value; // Assign the string default value
+            parser_expect(parser, TOKEN_STRING);
+            break;
+          case TOKEN_INT:
+            nested_field_ast = init_ast(AST_INTEGER);
+            nested_field_ast->int_value.value = atoi(parser->current_token->value); // Assign integer default
+            nested_field_ast->int_value.null = 0;
+            parser_expect(parser, TOKEN_INT);
+            break;
+          case TOKEN_REAL:
+            nested_field_ast = init_ast(AST_REAL);
+            nested_field_ast->real_value.value = atof(parser->current_token->value); // Assign real default
+            nested_field_ast->real_value.null = 0;
+            parser_expect(parser, TOKEN_REAL);
+            break;
+          case TOKEN_BOOL:
+            nested_field_ast = init_ast(AST_BOOLEAN);
+            nested_field_ast->boolean_value.value = strcmp(parser->current_token->value, "True") == 0; // Assign real default
+            nested_field_ast->boolean_value.null = 0;
+            parser_expect(parser, TOKEN_BOOL);
+            break;
+          case TOKEN_CHAR:
+            nested_field_ast = init_ast(AST_CHARACTER);
+            nested_field_ast->char_value.value = parser->current_token->value[0]; // Assign real default
+            nested_field_ast->char_value.null = 0;
+            parser_expect(parser, TOKEN_CHAR);
+            break;
+          case TOKEN_LBRACKET:
+            nested_field_ast = parse_array(parser, scope);
+            break;
+          default:
+            fprintf(stderr, "Unknown value type: %s\n", parser->current_token->value);
+            exit(1);
+            break;
+          }
+
+          // Create the nested record element AST node
+          ast_record_element_ *nested_record_element = malloc(sizeof(ast_record_element_));
+          nested_record_element->element_name = nested_field_name;
+          nested_record_element->element = nested_field_ast;
+
+          // Add the nested element to the record's list
+          add_ast_to_list((ast_ ***)&field_ast->record_elements, (ast_ *)nested_record_element);
+          field_ast->field_count++;
+          // Expect a comma or closing brace
+          if (parser->current_token->type == TOKEN_COMMA)
+          {
+            parser_expect(parser, TOKEN_COMMA); // Consume ','
+          }
+        }
+        parser_expect(parser, TOKEN_RBRACE); // Consume '}'
       }
       else
       {

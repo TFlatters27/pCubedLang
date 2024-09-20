@@ -15,15 +15,17 @@ enum token_type
   TOKEN_RPAREN = 1 << 9,     // 512 : )
   TOKEN_LBRACKET = 1 << 10,  // 1024 : [
   TOKEN_RBRACKET = 1 << 11,  // 2048 : ]
-  TOKEN_ARITH_OP = 1 << 12,  // 4096 : +|-|*|/|^|DIV|MOD
-  TOKEN_REL_OP = 1 << 13,    // 8192: < | > | = | != | <= | >=
-  TOKEN_BOOL_OP = 1 << 14,   // 16384: AND | OR | NOT
-  TOKEN_UN_OP = 1 << 15,     // 32768: - (unary operator)
-  TOKEN_COMMA = 1 << 16,     // 65536 : ,
-  TOKEN_COLON = 1 << 17,     // 131072 : :
-  TOKEN_FULLSTOP = 1 << 18,  // 262144 : .
-  TOKEN_PIPE = 1 << 19,      // 524288 : |
-  TOKEN_EOF = 1 << 20        // 1048576 : ^D
+  TOKEN_LBRACE = 1 << 12,    // 4096 : {
+  TOKEN_RBRACE = 1 << 13,    // 8192 : }
+  TOKEN_ARITH_OP = 1 << 14,  // 16384 : +|-|*|/|^|DIV|MOD
+  TOKEN_REL_OP = 1 << 15,    // 32768 : < | > | = | != | <= | >=
+  TOKEN_BOOL_OP = 1 << 16,   // 65536 : AND | OR | NOT
+  TOKEN_UN_OP = 1 << 17,     // 131072 : - (unary operator)
+  TOKEN_COMMA = 1 << 18,     // 262144 : ,
+  TOKEN_COLON = 1 << 19,     // 524288 : :
+  TOKEN_FULLSTOP = 1 << 20,  // 1048576 : .
+  TOKEN_PIPE = 1 << 21,      // 2097152 : |
+  TOKEN_EOF = 1 << 22        // 4194304 : ^D
 };
 
 typedef struct TOKEN_STRUCT

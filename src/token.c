@@ -24,6 +24,8 @@ const char *token_type_to_string(enum token_type types)
       {TOKEN_RPAREN, "RIGHT PARENTHESIS"},
       {TOKEN_LBRACKET, "LEFT BRACKET"},
       {TOKEN_RBRACKET, "RIGHT BRACKET"},
+      {TOKEN_LBRACE, "LEFT BRACE"},
+      {TOKEN_RBRACE, "RIGHT BRACE"},
       {TOKEN_ARITH_OP, "ARITHMETIC OPERATOR"},
       {TOKEN_REL_OP, "RELATIONAL OPERATOR"},
       {TOKEN_BOOL_OP, "BOOLEAN OPERATOR"},

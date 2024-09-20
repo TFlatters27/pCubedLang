@@ -45,16 +45,7 @@ int main(int argc, char *argv[])
         // Initialize components
         lexer_ *lexer = init_lexer(file_contents);
         scope_ *scope = init_scope(NULL, "global_scope");
-        // token_ *token = NULL;
-        // if (debug)
-        // {
-        //   printf("**************************LEXER OUTPUT*************************\n");
-        //   while ((token = lexer_next(lexer))->type != TOKEN_EOF)
-        //   {
-        //     printf("{%s::%s}\n", token_type_to_string(token->type), token->value);
-        //   }
-        //   printf("***********************************************************\n");
-        // }
+        token_ *token = NULL;
         parser_ *parser = init_parser(lexer, scope);
         interpreter_ *interpreter = init_interpreter();
 

@@ -179,6 +179,10 @@ token_ *lexer_next(lexer_ *lexer)
       return lexer_collect_token(lexer, init_token(TOKEN_LBRACKET, lexer_get_char_as_string(lexer)));
     case ']':
       return lexer_collect_token(lexer, init_token(TOKEN_RBRACKET, lexer_get_char_as_string(lexer)));
+    case '{':
+      return lexer_collect_token(lexer, init_token(TOKEN_LBRACE, lexer_get_char_as_string(lexer)));
+    case '}':
+      return lexer_collect_token(lexer, init_token(TOKEN_RBRACE, lexer_get_char_as_string(lexer)));
     case ',':
       return lexer_collect_token(lexer, init_token(TOKEN_COMMA, lexer_get_char_as_string(lexer)));
     case ':':
