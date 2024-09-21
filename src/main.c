@@ -8,7 +8,7 @@
 #include "include/io.h"
 #include "include/interpreter.h"
 
-#define MAX_LIMIT 20
+#define MAX_LIMIT 128
 
 void print_help()
 {
@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
   {
     char input[MAX_LIMIT];
     printf("Welcome to the P-cubed language v.1.0.0\nCreated by mxcury\nTo exit REPL mode call `>>> EXIT`\n");
+    scope_ *scope = init_scope(NULL, "global_scope");
     while (1)
     {
       printf(">>> ");
@@ -79,7 +80,6 @@ int main(int argc, char *argv[])
 
       // Initialize components for REPL mode
       lexer_ *lexer = init_lexer(input);
-      scope_ *scope = init_scope(NULL, "global_scope");
       parser_ *parser = init_parser(lexer, scope);
       interpreter_ *interpreter = init_interpreter();
 

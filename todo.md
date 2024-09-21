@@ -105,4 +105,9 @@
 - [x] Add default values in record fields
 - [x] Have named scopes
 - [x] Printing of arrays and records
+
+## Later Releases
+
+- [ ] Fix memory leaks
+- [ ] Add better REPL mode
 - [x] More informative error messages
