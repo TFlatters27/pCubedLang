@@ -25,15 +25,30 @@ void parser_expect(parser_ *parser, enum token_type expected_type)
   if (parser->current_token->type & expected_type)
   {
     parser->prev_token = parser->current_token;
-    parser->current_token = lexer_next(parser->lexer);
-    // if (parser->prev_token->type != TOKEN_NEWLINE)
-    // printf("\tTOKEN: %s{%s}\n", token_type_to_string(parser->prev_token->type), parser->prev_token->value);
+    parser->current_token = lexer_next(parser->lexer); // Progress the lexer to get the next token
   }
   else
   {
-    fprintf(
-        stderr, "Error: Found unexpected token `%s` : %s\n", token_type_to_string(parser->current_token->type), parser->current_token->value);
-    exit(1);
+    // Get details about the current token
+    const char *found_type = token_type_to_string(parser->current_token->type);
+    const char *found_value = parser->current_token->value;
+
+    // Get the expected token type for the error message
+    const char *expected_type_str = token_type_to_string(expected_type);
+
+    // Get the current token's line and column numbers
+    int line = parser->lexer->line;
+    int column = parser->lexer->column;
+
+    // Print a detailed and informative error message
+    fprintf(stderr, "Parse Error at line %d, column %d:\n", line, column);
+    fprintf(stderr, "  Expected token of type `%s`, but found `%s` (value: `%s`).\n",
+            expected_type_str, found_type, found_value);
+
+    // Optionally: log previous token info for debugging
+    // fprintf(stderr, "Previous token was: %s\n", token_type_to_string(parser->prev_token->type));
+
+    exit(EXIT_FAILURE); // Terminate on error
   }
 }
 
@@ -41,41 +56,55 @@ ast_ *parser_parse_statement(parser_ *parser, scope_ *scope)
 {
   if (parser->current_token->type == TOKEN_ID)
   {
+    // Parse the identifier and return the AST for it
     ast_ *ast = parser_parse_id(parser, scope);
-    // printf("Parsed AST expression %s\n", ast_type_to_string(ast->type));
     return ast;
   }
   else if (parser->current_token->type == TOKEN_NEWLINE)
   {
-    parser_expect(parser, TOKEN_NEWLINE); // Consume newline after each statement
-    // return init_ast(AST_NOOP);
+    // If we encounter a newline, we expect to consume it
+    parser_expect(parser, TOKEN_NEWLINE); // Consume the newline token
   }
-  // exit(1);
+  else
+  {
+    // Handle unexpected tokens with an error
+    const char *found_type = token_type_to_string(parser->current_token->type);
+    const char *found_value = parser->current_token->value;
+    int line = parser->lexer->line;
+    int column = parser->lexer->column;
+
+    // Print an informative error message
+    fprintf(stderr, "Parse Error at line %d, column %d:\n", line, column);
+    fprintf(stderr, "  Unexpected token: `%s` (value: `%s`).\n", found_type, found_value);
+
+    // Optionally, you can provide suggestions for what tokens are expected
+    fprintf(stderr, "  Expected either an identifier (TOKEN_ID) or a newline (TOKEN_NEWLINE).\n");
+
+    exit(EXIT_FAILURE); // Terminate on error
+  }
+
+  // Return a NOOP (no-operation) AST if no statement is parsed
   return init_ast(AST_NOOP);
 }
 
 ast_ *parser_parse_statements(parser_ *parser, scope_ *scope)
 {
   ast_ *compound = init_ast(AST_COMPOUND);
-  compound->compound_value = init_ast_list(); // Use init_ast_list to initialize the list
+  compound->compound_value = init_ast_list(); // Initialize the list for compound statements
   set_scope(compound, scope);
 
   do
   {
     ast_ *ast_statement = parser_parse_statement(parser, scope);
-    if (ast_statement)
+
+    // Only add valid statements that are not NOOPs (no-operation)
+    if (ast_statement->type != AST_NOOP)
     {
-      if (ast_statement->type != AST_NOOP)
-      {
-        set_scope(ast_statement, scope);
-        add_ast_to_list(&(compound->compound_value), ast_statement);
-      }
+      set_scope(ast_statement, scope);
+      add_ast_to_list(&(compound->compound_value), ast_statement);
     }
-    else
-    {
-      break;
-    }
-  } while (parser->current_token->type != TOKEN_EOF);
+
+  } while (parser->current_token->type != TOKEN_EOF); // Continue until the end of file
 
   return compound;
 }
@@ -307,6 +336,20 @@ ast_ *parse_literal(parser_ *parser, scope_ *scope)
   {
     expression = parse_array(parser, scope);
   }
+  else
+  {
+    // Handle unexpected tokens with an error
+    const char *found_type = token_type_to_string(parser->current_token->type);
+    const char *found_value = parser->current_token->value;
+    int line = parser->lexer->line;
+    int column = parser->lexer->column;
+
+    // Print an informative error message
+    fprintf(stderr, "Parse Error at line %d, column %d:\n", line, column);
+    fprintf(stderr, "  Unexpected token: `%s` (value: `%s`).\n", found_type, found_value);
+
+    exit(EXIT_FAILURE); // Terminate on error
+  }
   return expression;
 }
 
@@ -323,7 +366,7 @@ ast_ *parse_arithmetic_operation(parser_ *parser, ast_ *left, scope_ *scope)
     if (right_expression->type != AST_INTEGER && right_expression->type != AST_REAL && right_expression->type != AST_VARIABLE)
     {
       fprintf(stderr, "Type error: Unary minus can only be applied to INT, REAL, or ID\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
     ast_ *unary_expression = init_ast(AST_ARITHMETIC_EXPRESSION);
@@ -344,7 +387,7 @@ ast_ *parse_arithmetic_operation(parser_ *parser, ast_ *left, scope_ *scope)
   if (!left || !right_expression)
   {
     fprintf(stderr, "Type error: Invalid expression for arithmetic operator '%s'\n", arith_op->op);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   arith_op->left = left;
@@ -365,7 +408,7 @@ ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
   if (!left || !right_expression)
   {
     fprintf(stderr, "Type error: Invalid expression for relational operator '%s'\n", rel_op->op);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   rel_op->left = left;
@@ -387,7 +430,7 @@ ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
     if (right_expression->type != AST_BOOLEAN_EXPRESSION && right_expression->type != AST_VARIABLE)
     {
       fprintf(stderr, "Type error: NOT can only be applied to BOOLEAN expressions or ID\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
     ast_ *unary_expression = init_ast(AST_BOOLEAN_EXPRESSION);
@@ -407,7 +450,7 @@ ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
   if (!left || !right_expression)
   {
     fprintf(stderr, "Type error: Invalid expression for boolean operator '%s'\n", bool_op->op);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   bool_op->left = left;
@@ -458,6 +501,21 @@ ast_ *parse_expression(parser_ *parser, scope_ *scope)
   if (parser->current_token->type == TOKEN_BOOL_OP)
   {
     expression = parse_boolean_operation(parser, expression, scope);
+  }
+
+  if (!expression)
+  {
+    // Handle unexpected tokens with an error
+    const char *found_type = token_type_to_string(parser->current_token->type);
+    const char *found_value = parser->current_token->value;
+    int line = parser->lexer->line;
+    int column = parser->lexer->column;
+
+    // Print an informative error message
+    fprintf(stderr, "Parse Error at line %d, column %d:\n", line, column);
+    fprintf(stderr, "  Unexpected token: `%s` (value: `%s`).\n", found_type, found_value);
+
+    exit(EXIT_FAILURE); // Terminate on error
   }
 
   return expression;
@@ -554,6 +612,20 @@ ast_ *handle_undefined_loop(parser_ *parser, scope_ *scope)
 
     parser_expect(parser, TOKEN_ID); // Consume 'ENDWHILE'
   }
+  else
+  {
+    // Handle unexpected tokens with an error
+    const char *found_type = token_type_to_string(parser->current_token->type);
+    const char *found_value = parser->current_token->value;
+    int line = parser->lexer->line;
+    int column = parser->lexer->column;
+
+    // Print an informative error message
+    fprintf(stderr, "Parse Error at line %d, column %d:\n", line, column);
+    fprintf(stderr, "  Unexpected token: `%s` (value: `%s`).\n", found_type, found_value);
+
+    exit(EXIT_FAILURE); // Terminate on error
+  }
   set_scope(loop_ast, scope);
   return loop_ast;
 }
@@ -594,7 +666,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
     else
     {
       fprintf(stderr, "Error: Expected 'TO' after start expression.\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
     // Optional: Handle the STEP part
@@ -623,7 +695,7 @@ ast_ *handle_defined_loop(parser_ *parser, scope_ *scope)
   else
   {
     fprintf(stderr, "Error: Expected '<-' or 'IN' after loop variable.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   parser_expect(parser, TOKEN_NEWLINE); // Consume the newline after the FOR statement
@@ -713,7 +785,7 @@ ast_ *handle_selection(parser_ *parser, scope_ *scope)
       if (else_if_bodies == NULL)
       {
         fprintf(stderr, "Error: Memory reallocation failed for else_if_bodies.\n");
-        return NULL;
+        exit(EXIT_FAILURE);
       }
 
       else_if_bodies[else_if_body_count - 1] = else_if_body;
@@ -896,8 +968,8 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
             nested_field_ast = parse_array(parser, scope);
             break;
           default:
-            fprintf(stderr, "Unknown value type: %s\n", parser->current_token->value);
-            exit(1);
+            fprintf(stderr, "Error: Unknown value type: %s\n", parser->current_token->value);
+            exit(EXIT_FAILURE);
             break;
           }
 
@@ -919,8 +991,8 @@ ast_ *handle_record_defintion(parser_ *parser, scope_ *scope)
       }
       else
       {
-        fprintf(stderr, "Default value for type %s is not supported.\n", parser->current_token->value);
-        exit(1);
+        fprintf(stderr, "Error: Default value for type %s is not supported.\n", parser->current_token->value);
+        exit(EXIT_FAILURE);
       }
     }
 
@@ -972,7 +1044,7 @@ ast_ *handle_subroutine(parser_ *parser, scope_ *scope)
     else
     {
       fprintf(stderr, "Error: Unexpected token in parameter list: %s\n", parser->current_token->value);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 

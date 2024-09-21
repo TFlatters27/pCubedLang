@@ -75,7 +75,7 @@ token_ *lexer_skip(lexer_ *lexer)
 {
   while (lexer->c == ' ' || lexer->c == '\t' || lexer->c == '\n' || lexer->c == '#')
   {
-    // Skip whitespace
+    // Skip spaces and tabs
     while (lexer->c == ' ' || lexer->c == '\t')
     {
       lexer_progress(lexer);
@@ -91,7 +91,7 @@ token_ *lexer_skip(lexer_ *lexer)
     // Skip comments starting with '#'
     if (lexer->c == '#')
     {
-      // Skip characters until a newline or end of string is found
+      // Skip everything until a newline or the end of the string
       while (lexer->c != '\n' && lexer->c != '\0')
       {
         lexer_progress(lexer);
@@ -99,7 +99,7 @@ token_ *lexer_skip(lexer_ *lexer)
     }
   }
 
-  // If nothing to skip, return NULL (indicating no more tokens to skip)
+  // If nothing more to skip, return NULL (indicating no skipped tokens left)
   return NULL;
 }
 

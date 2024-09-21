@@ -18,8 +18,8 @@ ast_ *concatenate(ast_ *left_val, ast_ *right_val)
       result = (char *)malloc(3); // 2 chars + null terminator
       if (result == NULL)
       {
-        perror("Failed to allocate memory for char concatenation");
-        exit(1);
+        fprintf(stderr, "Failed to allocate memory for char concatenation\n");
+        return NULL;
       }
       result[0] = left_val->char_value.value;  // Access the char value
       result[1] = right_val->char_value.value; // Access the char value
@@ -27,8 +27,8 @@ ast_ *concatenate(ast_ *left_val, ast_ *right_val)
     }
     else
     {
-      perror("Concatenation error: One of the character values is null");
-      exit(1);
+      fprintf(stderr, "Concatenation error: One of the character values is null\n");
+      return NULL;
     }
   }
   // Handle string + character
@@ -39,8 +39,8 @@ ast_ *concatenate(ast_ *left_val, ast_ *right_val)
       result = (char *)malloc(strlen(left_val->string_value) + 2); // 1 char + null terminator
       if (result == NULL)
       {
-        perror("Failed to allocate memory for string-char concatenation");
-        exit(1);
+        fprintf(stderr, "Failed to allocate memory for string-char concatenation\n");
+        return NULL;
       }
       strcpy(result, left_val->string_value);
       result[strlen(left_val->string_value)] = right_val->char_value.value; // Access the char value
@@ -48,8 +48,8 @@ ast_ *concatenate(ast_ *left_val, ast_ *right_val)
     }
     else
     {
-      perror("Concatenation error: One of the values is null");
-      exit(1);
+      fprintf(stderr, "Concatenation error: One of the values is null\n");
+      return NULL;
     }
   }
   // Handle character + string
@@ -60,16 +60,16 @@ ast_ *concatenate(ast_ *left_val, ast_ *right_val)
       result = (char *)malloc(2 + strlen(right_val->string_value)); // 1 char + string + null terminator
       if (result == NULL)
       {
-        perror("Failed to allocate memory for char-string concatenation");
-        exit(1);
+        fprintf(stderr, "Failed to allocate memory for char-string concatenation\n");
+        return NULL;
       }
       result[0] = left_val->char_value.value; // Access the char value
       strcpy(&result[1], right_val->string_value);
     }
     else
     {
-      perror("Concatenation error: One of the values is null");
-      exit(1);
+      fprintf(stderr, "Concatenation error: One of the values is null\n");
+      return NULL;
     }
   }
   // Handle string + string
@@ -80,23 +80,23 @@ ast_ *concatenate(ast_ *left_val, ast_ *right_val)
       result = (char *)malloc(strlen(left_val->string_value) + strlen(right_val->string_value) + 1);
       if (result == NULL)
       {
-        perror("Failed to allocate memory for string-string concatenation");
-        exit(1);
+        fprintf(stderr, "Failed to allocate memory for string-string concatenation\n");
+        return NULL;
       }
       strcpy(result, left_val->string_value);
       strcat(result, right_val->string_value);
     }
     else
     {
-      perror("Concatenation error: One of the string values is null");
-      exit(1);
+      fprintf(stderr, "Concatenation error: One of the string values is null\n");
+      return NULL;
     }
   }
   // Invalid types for concatenation
   else
   {
-    perror("Concatenation error: Unsupported types");
-    exit(1);
+    fprintf(stderr, "Concatenation error: Unsupported types\n");
+    return NULL;
   }
 
   // Create a new AST node for the concatenated result
@@ -181,8 +181,8 @@ void interpreter_output_literal(ast_ *expr, interpreter_ *interpreter)
     }
     break;
   default:
-    fprintf(stderr, "Unsupported output type in AST_OUTPUT.\n");
-    exit(1);
+    fprintf(stderr, "Interpreter Error: Unsupported output type in AST_OUTPUT.\n");
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -191,7 +191,7 @@ int compare_ast_literals(ast_ *a, ast_ *b)
   // First, check if the types match
   if (a->type != b->type)
   {
-    fprintf(stderr, "Mismatched types during comparison\n");
+    fprintf(stderr, "Interpreter Error: Mismatched types during comparison\n");
     return 0; // Types don't match, return 0 (false)
   }
 
@@ -236,8 +236,8 @@ int compare_ast_literals(ast_ *a, ast_ *b)
     return 1; // Arrays match in size and elements
 
   default:
-    fprintf(stderr, "Unsupported AST type in compare_ast_literals.\n");
-    exit(1);
+    fprintf(stderr, "Interpreter Error: Unsupported AST type for comparison.\n");
+    exit(EXIT_FAILURE);
   }
 
   return 0; // Fallback, in case no match was found
@@ -247,7 +247,7 @@ ast_ *handle_len_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 1)
   {
-    fprintf(stderr, "Error: LEN method expects 1 argument, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: LEN method expects 1 argument, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -269,7 +269,7 @@ ast_ *handle_len_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: LEN method expects an Array or a String.\n");
+    fprintf(stderr, "Native Method Error: LEN method expects an Array or a String.\n");
     return NULL;
   }
 }
@@ -278,7 +278,7 @@ ast_ *handle_position_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 2)
   {
-    fprintf(stderr, "Error: POS method expects 2 arguments, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: POS method expects 2 arguments, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -297,7 +297,7 @@ ast_ *handle_position_method(interpreter_ *interpreter, ast_ *node)
         return return_value;
       }
     }
-    fprintf(stderr, "Error: Element not found in array.\n");
+    fprintf(stderr, "Native Method Error: Element not found in array.\n");
     return NULL;
   }
   else if (arg0->type == AST_STRING && arg1->type == AST_CHARACTER)
@@ -311,12 +311,12 @@ ast_ *handle_position_method(interpreter_ *interpreter, ast_ *node)
         return return_value;
       }
     }
-    fprintf(stderr, "Error: Character not found in string.\n");
+    fprintf(stderr, "Native Method Error: Character not found in string.\n");
     return NULL;
   }
   else
   {
-    fprintf(stderr, "Error: POS method expects an Array or a String.\n");
+    fprintf(stderr, "Native Method Error: POS method expects an Array or a String.\n");
     return NULL;
   }
 }
@@ -325,7 +325,7 @@ ast_ *handle_substring_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 3)
   {
-    fprintf(stderr, "Error: SUBSTRING method expects 3 arguments, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: SUBSTRING method expects 3 arguments, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -342,7 +342,7 @@ ast_ *handle_substring_method(interpreter_ *interpreter, ast_ *node)
 
     if (start < 0 || start >= string_length || end < 0 || end > string_length || start > end)
     {
-      fprintf(stderr, "Error: SUBSTRING indices out of bounds or invalid. Start: %d, End: %d, String Length: %d\n", start, end, string_length);
+      fprintf(stderr, "Native Method Error: SUBSTRING indices out of bounds or invalid. Start: %d, End: %d, String Length: %d\n", start, end, string_length);
       return NULL;
     }
 
@@ -351,8 +351,8 @@ ast_ *handle_substring_method(interpreter_ *interpreter, ast_ *node)
     char *substring = (char *)malloc(substring_length + 1);
     if (substring == NULL)
     {
-      fprintf(stderr, "Error: Memory allocation for SUBSTRING failed.\n");
-      exit(1);
+      fprintf(stderr, "Memory Error: Memory allocation for SUBSTRING failed.\n");
+      return NULL;
     }
 
     strncpy(substring, input_string + start, substring_length);
@@ -365,7 +365,7 @@ ast_ *handle_substring_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: SUBSTRING method expects a String followed by 2 integers.\n SUBSTRING(string, integer, integer)\n");
+    fprintf(stderr, "Native Method Error: SUBSTRING method expects a String followed by 2 integers.\n SUBSTRING(string, integer, integer)\n");
     return NULL;
   }
 }
@@ -374,7 +374,7 @@ ast_ *handle_slice_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 3)
   {
-    fprintf(stderr, "Error: SLICE method expects 3 arguments, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: SLICE method expects 3 arguments, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -390,7 +390,7 @@ ast_ *handle_slice_method(interpreter_ *interpreter, ast_ *node)
 
     if (start < 0 || start >= array_size || end < 0 || end > array_size || start > end)
     {
-      fprintf(stderr, "Error: SLICE indices out of bounds or invalid. Start: %d, End: %d, Array Size: %d\n", start, end, array_size);
+      fprintf(stderr, "Native Method Error: SLICE indices out of bounds or invalid. Start: %d, End: %d, Array Size: %d\n", start, end, array_size);
       return NULL;
     }
 
@@ -411,7 +411,7 @@ ast_ *handle_slice_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: SLICE method expects an array followed by 2 integers.\n SLICE(array, integer, integer)\n");
+    fprintf(stderr, "Native Method Error: SLICE method expects an array followed by 2 integers.\n SLICE(array, integer, integer)\n");
     return NULL;
   }
 }
@@ -420,7 +420,7 @@ ast_ *handle_string_to_int_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 1)
   {
-    fprintf(stderr, "Error: STRING_TO_INT method expects 1 argument, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: STRING_TO_INT method expects 1 argument, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -435,7 +435,7 @@ ast_ *handle_string_to_int_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: STRING_TO_INT method expects a string argument.\n");
+    fprintf(stderr, "Native Method Error: STRING_TO_INT method expects a string argument.\n");
     return NULL;
   }
 }
@@ -443,7 +443,7 @@ ast_ *handle_string_to_real_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 1)
   {
-    fprintf(stderr, "Error: STRING_TO_REAL method expects 1 argument, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: STRING_TO_REAL method expects 1 argument, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -458,7 +458,7 @@ ast_ *handle_string_to_real_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: STRING_TO_REAL method expects a string argument.\n");
+    fprintf(stderr, "Native Method Error: STRING_TO_REAL method expects a string argument.\n");
     return NULL;
   }
 }
@@ -466,7 +466,7 @@ ast_ *handle_int_to_string_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 1)
   {
-    fprintf(stderr, "Error: INT_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: INT_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -481,7 +481,7 @@ ast_ *handle_int_to_string_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: INT_TO_STRING method expects an integer argument.\n");
+    fprintf(stderr, "Native Method Error: INT_TO_STRING method expects an integer argument.\n");
     return NULL;
   }
 }
@@ -489,7 +489,7 @@ ast_ *handle_real_to_string_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 1)
   {
-    fprintf(stderr, "Error: REAL_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: REAL_TO_STRING method expects 1 argument, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -504,7 +504,7 @@ ast_ *handle_real_to_string_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: REAL_TO_STRING method expects a real argument.\n");
+    fprintf(stderr, "Native Method Error: REAL_TO_STRING method expects a real argument.\n");
     return NULL;
   }
 }
@@ -512,7 +512,7 @@ ast_ *handle_char_to_code_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 1)
   {
-    fprintf(stderr, "Error: CHAR_TO_CODE method expects 1 argument, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: CHAR_TO_CODE method expects 1 argument, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -527,7 +527,7 @@ ast_ *handle_char_to_code_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: CHAR_TO_CODE method expects a character argument.\n");
+    fprintf(stderr, "Native Method Error: CHAR_TO_CODE method expects a character argument.\n");
     return NULL;
   }
 }
@@ -535,7 +535,7 @@ ast_ *handle_code_to_char_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 1)
   {
-    fprintf(stderr, "Error: CODE_TO_CHAR method expects 1 argument, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: CODE_TO_CHAR method expects 1 argument, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -550,7 +550,7 @@ ast_ *handle_code_to_char_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: CODE_TO_CHAR method expects an integer argument.\n");
+    fprintf(stderr, "Native Method Error: CODE_TO_CHAR method expects an integer argument.\n");
     return NULL;
   }
 }
@@ -558,7 +558,7 @@ ast_ *handle_random_int_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 2)
   {
-    fprintf(stderr, "Error: RANDOM_INT method expects 2 arguments, but got %d.\n", node->arguments_count);
+    fprintf(stderr, "Native Method Error: RANDOM_INT method expects 2 arguments, but got %d.\n", node->arguments_count);
     return NULL;
   }
 
@@ -580,7 +580,7 @@ ast_ *handle_random_int_method(interpreter_ *interpreter, ast_ *node)
   }
   else
   {
-    fprintf(stderr, "Error: RANDOM_INT method expects two integer arguments.\n");
+    fprintf(stderr, "Native Method Error: RANDOM_INT method expects two integer arguments.\n");
     return NULL;
   }
 }
@@ -602,11 +602,6 @@ ast_ *copy_field_value(ast_ *field_value)
     break;
   case AST_STRING:
     element->string_value = strdup(field_value->string_value); // Deep copy the string
-    if (!element->string_value)
-    {
-      fprintf(stderr, "Error: Failed to allocate memory for string copy.\n");
-      exit(1);
-    }
     break;
   case AST_BOOLEAN:
     element->boolean_value = field_value->boolean_value;
@@ -618,11 +613,7 @@ ast_ *copy_field_value(ast_ *field_value)
 
     // Deep copy array elements
     element->array_elements = (ast_ **)malloc(field_value->array_size * sizeof(ast_ *));
-    if (!element->array_elements)
-    {
-      fprintf(stderr, "Error: Failed to allocate memory for array copy.\n");
-      exit(1);
-    }
+
     for (int i = 0; i < field_value->array_size; i++)
     {
       element->array_elements[i] = copy_field_value(field_value->array_elements[i]);
@@ -630,38 +621,17 @@ ast_ *copy_field_value(ast_ *field_value)
     break;
   case AST_RECORD:
     element->record_name = strdup(field_value->record_name); // Copy the record name
-    if (!element->record_name)
-    {
-      fprintf(stderr, "Error: Failed to allocate memory for record name copy.\n");
-      exit(1);
-    }
 
     element->field_count = field_value->field_count;
     element->record_elements = (ast_record_element_ **)malloc(field_value->field_count * sizeof(ast_record_element_ *));
-    if (!element->record_elements)
-    {
-      fprintf(stderr, "Error: Failed to allocate memory for record elements copy.\n");
-      exit(1);
-    }
 
     // Deep copy each record element
     for (int i = 0; i < field_value->field_count; i++)
     {
       ast_record_element_ *src_field = field_value->record_elements[i];
       ast_record_element_ *dst_field = malloc(sizeof(ast_record_element_));
-      if (!dst_field)
-      {
-        fprintf(stderr, "Error: Failed to allocate memory for record field copy.\n");
-        exit(1);
-      }
 
       dst_field->element_name = strdup(src_field->element_name); // Copy field name
-      if (!dst_field->element_name)
-      {
-        fprintf(stderr, "Error: Failed to allocate memory for field name copy.\n");
-        exit(1);
-      }
-
       dst_field->element = copy_field_value(src_field->element); // Deep copy the field value
       dst_field->dimension = src_field->dimension;
 
@@ -669,8 +639,8 @@ ast_ *copy_field_value(ast_ *field_value)
     }
     break;
   default:
-    fprintf(stderr, "Error: Unsupported type.\n");
-    exit(1);
+    fprintf(stderr, "Interpreter Error: Unsupported type.\n");
+    return NULL;
   }
   return element;
 }
@@ -730,8 +700,8 @@ ast_ *interpreter_process(interpreter_ *interpreter, ast_ *node)
   case AST_EXIT:
     return interpreter_process_exit(interpreter, node);
   default:
-    fprintf(stderr, "Uncaught statement of type `%s`\n", ast_type_to_string(node->type));
-    exit(1);
+    fprintf(stderr, "Interpreter Error: Uncaught statement of type `%s`\n", ast_type_to_string(node->type));
+    return NULL;
   }
 
   return NULL; // This line will never be reached due to the exit above
@@ -780,8 +750,8 @@ ast_ *interpreter_process_assignment(interpreter_ *interpreter, ast_ *node)
     }
     else
     {
-      fprintf(stderr, "Error: Type mismatch during assignment.\n");
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Type mismatch during assignment.\n");
+      return NULL;
     }
 
     // Update the assignment node for arrays or records
@@ -806,14 +776,13 @@ ast_ *interpreter_process_variable(interpreter_ *interpreter, ast_ *node)
 {
   ast_ *vdef = scope_get_variable_definition(get_scope(node), node->variable_name);
 
-  if (vdef != NULL)
+  if (!vdef)
   {
-    return interpreter_process(interpreter, vdef);
+    fprintf(stderr, "Interpreter Error: Undefined variable `%s`\n", node->variable_name);
+    return NULL;
   }
 
-  printf("Undefined variable `%s`\n", node->variable_name);
-  exit(1);
-  return NULL;
+  return interpreter_process(interpreter, vdef);
 }
 ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 {
@@ -822,14 +791,14 @@ ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 
   if (!array)
   {
-    fprintf(stderr, "Error: could not fetch array from scope\n");
-    exit(1);
+    fprintf(stderr, "Interpreter Error: could not fetch array from scope\n");
+    return NULL;
   }
 
   if (array->type != AST_ARRAY)
   {
-    fprintf(stderr, "Error: %s is not defined as an array.\n", node->variable_name);
-    exit(1);
+    fprintf(stderr, "Interpreter Error: %s is not defined as an array.\n", node->variable_name);
+    return NULL;
   }
 
   ast_ *current_array = array;
@@ -842,8 +811,8 @@ ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
 
     if (index_value->type != AST_INTEGER)
     {
-      printf("Error: Array index must be an integer.\n");
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Array index must be an integer.\n");
+      return NULL;
     }
 
     if (index_value->int_value.null == 0)
@@ -853,8 +822,8 @@ ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
       // Ensure current_array is valid and the index is within bounds
       if (current_array->type != AST_ARRAY || index < 0 || index >= current_array->array_size)
       {
-        printf("Error: Array index out of bounds or invalid array access.\n");
-        exit(1);
+        fprintf(stderr, "Interpreter Error: Array index out of bounds or invalid array access.\n");
+        return NULL;
       }
 
       // If this is the last index, return a pointer to the array element
@@ -870,8 +839,8 @@ ast_ **interpreter_process_array_access(interpreter_ *interpreter, ast_ *node)
     }
     else
     {
-      printf("Error: Array index cannot be null.\n");
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Array index cannot be null.\n");
+      return NULL;
     }
 
     index_count++;
@@ -888,8 +857,8 @@ ast_ **interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
   // Ensure that the variable is actually a record
   if (!record || record->type != AST_RECORD)
   {
-    fprintf(stderr, "Error: %s is not defined as a record.\n", node->variable_name);
-    exit(1);
+    fprintf(stderr, "Interpreter Error: %s is not defined as a record.\n", node->variable_name);
+    return NULL;
   }
 
   // Loop through the record elements to find the matching field
@@ -906,8 +875,8 @@ ast_ **interpreter_process_record_access(interpreter_ *interpreter, ast_ *node)
   }
 
   // If the field wasn't found, output an error
-  fprintf(stderr, "Error: Field '%s' not found in record '%s'.\n", node->field_name, node->variable_name);
-  exit(1);
+  fprintf(stderr, "Interpreter Error: Field '%s' not found in record '%s'.\n", node->field_name, node->variable_name);
+  return NULL;
 
   return NULL; // Fallback, should not reach here
 }
@@ -967,19 +936,19 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
   {
     if (node->type == AST_RECORD_DEFINITION)
     {
-      printf("Error: Record definition '%s' not found.\n", node->class_name);
+      fprintf(stderr, "Interpreter Error: Record definition '%s' not found.\n", node->class_name);
     }
     else if (node->type == AST_SUBROUTINE)
     {
-      printf("Error: Subroutine definition '%s' not found.\n", node->class_name);
+      fprintf(stderr, "Interpreter Error: Subroutine definition '%s' not found.\n", node->class_name);
     }
-    exit(1);
+    return NULL;
   }
 
   if (inst_definition->type == AST_SUBROUTINE && (node->arguments_count != inst_definition->parameter_count))
   {
-    printf("Error: Mismatched number of arguments for subroutine instantiation '%s'.\n", node->class_name);
-    exit(1);
+    fprintf(stderr, "Interpreter Error: Mismatched number of arguments for subroutine instantiation '%s'.\n", node->class_name);
+    return NULL;
   }
 
   if (inst_definition->type == AST_RECORD_DEFINITION)
@@ -1018,7 +987,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
         {
           ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
           if (!record_element)
-            exit(1);
+            return NULL;
 
           record_element->element_name = inst_field->element_name;
           record_element->element = copy_field_value(field_value);
@@ -1029,8 +998,8 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
         }
         else
         {
-          printf("Error: Mismatched type or dimension for field '%s'.\n", inst_field->element_name);
-          exit(1);
+          fprintf(stderr, "Interpreter Error: Mismatched type or dimension for field '%s'.\n", inst_field->element_name);
+          return NULL;
         }
       }
     }
@@ -1047,7 +1016,7 @@ ast_ *interpreter_process_instantiation(interpreter_ *interpreter, ast_ *node)
         {
           ast_record_element_ *record_element = malloc(sizeof(ast_record_element_));
           if (!record_element)
-            exit(1);
+            return NULL;
 
           record_element->element_name = inst_definition->record_elements[i]->element_name;
           record_element->element = arg;
@@ -1119,8 +1088,8 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
                      (right_val->type == AST_CHARACTER && right_val->char_value.null == 1) ||
                      (right_val->type == AST_STRING && right_val->string_value == NULL))))
   {
-    printf("Error: Null value in arithmetic expression\n");
-    exit(1);
+    fprintf(stderr, "Interpreter Error: Null value in arithmetic expression\n");
+    return NULL;
   }
 
   // Handle unary minus operation
@@ -1142,7 +1111,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
     }
     else
     {
-      fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+      fprintf(stderr, "Interpreter Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
       return NULL;
     }
   }
@@ -1173,13 +1142,13 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       }
       else
       {
-        fprintf(stderr, "Error: `%s` operator is only compatible with Integer, Real, Character, or String types\n", node->op);
+        fprintf(stderr, "Interpreter Error: `%s` operator is only compatible with Integer, Real, Character, or String types\n", node->op);
         return NULL;
       }
     }
     else
     {
-      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      fprintf(stderr, "Interpreter Error: Mismatched types between `%s` operator\n", node->op);
       return NULL;
     }
   }
@@ -1203,13 +1172,13 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       }
       else
       {
-        fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+        fprintf(stderr, "Interpreter Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
         return NULL;
       }
     }
     else
     {
-      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      fprintf(stderr, "Interpreter Error: Mismatched types between `%s` operator\n", node->op);
       return NULL;
     }
   }
@@ -1233,13 +1202,13 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       }
       else
       {
-        fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+        fprintf(stderr, "Interpreter Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
         return NULL;
       }
     }
     else
     {
-      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      fprintf(stderr, "Interpreter Error: Mismatched types between `%s` operator\n", node->op);
       return NULL;
     }
   }
@@ -1263,13 +1232,13 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       }
       else
       {
-        fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+        fprintf(stderr, "Interpreter Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
         return NULL;
       }
     }
     else
     {
-      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      fprintf(stderr, "Interpreter Error: Mismatched types between `%s` operator\n", node->op);
       return NULL;
     }
   }
@@ -1293,13 +1262,13 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       }
       else
       {
-        fprintf(stderr, "Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
+        fprintf(stderr, "Interpreter Error: `%s` operator is only compatible with Integer or Real types\n", node->op);
         return NULL;
       }
     }
     else
     {
-      fprintf(stderr, "Error: Mismatched types between `%s` operator\n", node->op);
+      fprintf(stderr, "Interpreter Error: Mismatched types between `%s` operator\n", node->op);
       return NULL;
     }
   }
@@ -1314,7 +1283,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
     }
     else
     {
-      fprintf(stderr, "Error: `%s` operator is only compatible with Integer types\n", node->op);
+      fprintf(stderr, "Interpreter Error: `%s` operator is only compatible with Integer types\n", node->op);
       return NULL;
     }
   }
@@ -1329,13 +1298,13 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
     }
     else
     {
-      fprintf(stderr, "Error: `%s` operator is only compatible with Integer types\n", node->op);
+      fprintf(stderr, "Interpreter Error: `%s` operator is only compatible with Integer types\n", node->op);
       return NULL;
     }
   }
 
-  printf("Invalid arithmetic operation: %s\n", node->op);
-  exit(1);
+  fprintf(stderr, "Interpreter Error: Invalid arithmetic operation: %s\n", node->op);
+  return NULL;
   return NULL; // Return a no-op if no valid operation found
 }
 
@@ -1360,15 +1329,15 @@ ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *no
         (left_val->type == AST_STRING && left_val->string_value == NULL) ||
         (right_val->type == AST_STRING && right_val->string_value == NULL))
     {
-      printf("Error: Null value in boolean expression\n");
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Null value in boolean expression\n");
+      return NULL;
     }
 
     // Ensure both sides are of comparable types (int, real, char, string)
     if (left_val->type != right_val->type)
     {
-      printf("Error: Type mismatch in boolean expression\n");
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Type mismatch in boolean expression\n");
+      return NULL;
     }
   }
   else
@@ -1380,8 +1349,8 @@ ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *no
         (right_val->type == AST_CHARACTER && right_val->char_value.null == 1) ||
         (right_val->type == AST_STRING && right_val->string_value == NULL))
     {
-      printf("Error: Null value in boolean expression\n");
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Null value in boolean expression\n");
+      return NULL;
     }
   }
 
@@ -1420,8 +1389,8 @@ ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *no
       result->boolean_value.value = left_num != right_num;
     else
     {
-      printf("Invalid boolean operation: %s\n", node->op);
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Invalid boolean operation: %s\n", node->op);
+      return NULL;
     }
   }
   // Handle comparisons for char (based on ASCII values)
@@ -1444,8 +1413,8 @@ ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *no
       result->boolean_value.value = left_char != right_char;
     else
     {
-      printf("Invalid boolean operation: %s\n", node->op);
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Invalid boolean operation: %s\n", node->op);
+      return NULL;
     }
   }
   // Handle comparisons for strings (lexicographical comparison)
@@ -1467,14 +1436,14 @@ ast_ *interpreter_process_boolean_expression(interpreter_ *interpreter, ast_ *no
       result->boolean_value.value = cmp_result != 0;
     else
     {
-      printf("Invalid boolean operation: %s\n", node->op);
-      exit(1);
+      fprintf(stderr, "Interpreter Error: Invalid boolean operation: %s\n", node->op);
+      return NULL;
     }
   }
   else
   {
-    printf("Error: Unsupported type for boolean comparison\n");
-    exit(1);
+    fprintf(stderr, "Interpreter Error: Unsupported type for boolean comparison\n");
+    return NULL;
   }
 
   result->boolean_value.null = 0;
@@ -1578,7 +1547,7 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     }
     else
     {
-      fprintf(stderr, "Error: Collection type not supported in FOR-IN loop\n");
+      fprintf(stderr, "Interpreter Error: Collection type not supported in FOR-IN loop\n");
       return NULL;
     }
 
@@ -1594,7 +1563,7 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
     ast_ *end = interpreter_process(interpreter, node->end_expr);
     if (end->type != AST_INTEGER || end->int_value.null == 1)
     {
-      fprintf(stderr, "Error: End expression could not be recognized as an integer\n");
+      fprintf(stderr, "Interpreter Error: End expression could not be recognized as an integer\n");
       return NULL;
     }
 
@@ -1613,7 +1582,7 @@ ast_ *interpreter_process_definite_loop(interpreter_ *interpreter, ast_ *node)
 
     if (step->type != AST_INTEGER || step->int_value.null == 1)
     {
-      fprintf(stderr, "Error: Step expression could not be recognized as an integer\n");
+      fprintf(stderr, "Interpreter Error: Step expression could not be recognized as an integer\n");
       return NULL;
     }
 
@@ -1660,7 +1629,7 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
     ast_ *condition = interpreter_process(interpreter, node->condition);
     if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
     {
-      fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
+      fprintf(stderr, "Interpreter Error: Condition could not be evaluated to an integer\n");
       return NULL;
     }
     while ((condition->boolean_value.value))
@@ -1676,7 +1645,7 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
       condition = interpreter_process(interpreter, node->condition);
       if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
       {
-        fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
+        fprintf(stderr, "Interpreter Error: Condition could not be evaluated to an integer\n");
         return NULL;
       }
     }
@@ -1687,7 +1656,7 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
     ast_ *condition = interpreter_process(interpreter, node->condition);
     if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
     {
-      fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
+      fprintf(stderr, "Interpreter Error: Condition could not be evaluated to an integer\n");
       return NULL;
     }
 
@@ -1704,7 +1673,7 @@ ast_ *interpreter_process_indefinite_loop(interpreter_ *interpreter, ast_ *node)
       condition = interpreter_process(interpreter, node->condition);
       if (condition->type != AST_BOOLEAN || condition->boolean_value.null == 1)
       {
-        fprintf(stderr, "Error: Condition could not be evaluated to an integer\n");
+        fprintf(stderr, "Interpreter Error: Condition could not be evaluated to an integer\n");
         return NULL;
       }
 
@@ -1721,7 +1690,7 @@ ast_ *interpreter_process_selection(interpreter_ *interpreter, ast_ *node)
 
   if (node->if_condition == NULL || node->if_body == NULL)
   {
-    fprintf(stderr, "Error: IF statement without condition or body\n");
+    fprintf(stderr, "Interpreter Error: IF statement without condition or body\n");
     return NULL;
   }
 
@@ -1729,7 +1698,7 @@ ast_ *interpreter_process_selection(interpreter_ *interpreter, ast_ *node)
   ast_ *if_condition = interpreter_process(interpreter, node->if_condition);
   if (if_condition->type != AST_BOOLEAN || if_condition->boolean_value.null == 1)
   {
-    fprintf(stderr, "Error: IF condition could not be evaluated to a boolean\n");
+    fprintf(stderr, "Interpreter Error: IF condition could not be evaluated to a boolean\n");
     return NULL;
   }
 
@@ -1754,7 +1723,7 @@ ast_ *interpreter_process_selection(interpreter_ *interpreter, ast_ *node)
       ast_ *else_if_condition = interpreter_process(interpreter, node->else_if_conditions[k]);
       if (else_if_condition->type != AST_BOOLEAN || else_if_condition->boolean_value.null == 1)
       {
-        fprintf(stderr, "Error: ELSE IF condition could not be evaluated to a boolean\n");
+        fprintf(stderr, "Interpreter Error: ELSE IF condition could not be evaluated to a boolean\n");
         return NULL;
       }
 
@@ -1793,7 +1762,7 @@ ast_ *interpreter_process_exit(interpreter_ *interpreter, ast_ *node)
   if (node->exit_code == 0)
   {
     printf("Program exitted successfully!\n");
-    exit(0);
+    exit(EXIT_SUCCESS);
   }
   else
   {

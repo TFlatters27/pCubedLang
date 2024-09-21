@@ -8,7 +8,7 @@ char *get_file_contents(const char *filepath)
   if (filepath == NULL)
   {
     printf("Error: A file must be specified.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   char *buffer = 0;

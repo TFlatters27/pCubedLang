@@ -36,7 +36,7 @@ scope_ *init_scope(scope_ *parent_scope, const char *scope_name)
   if (!scope)
   {
     fprintf(stderr, "Error: Memory allocation failed for scope initialization.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (parent_scope)
@@ -275,19 +275,19 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
     {
       fprintf(stderr, "Error: Invalid instantiation definition type.\n");
     }
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   // Check if the record_name or subroutine_name matches a built-in method
   if (idef->type == AST_RECORD_DEFINITION && is_builtin_method(idef->record_name))
   {
     fprintf(stderr, "Error: Record '%s' conflicts with a built-in method name.\n", idef->record_name);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   else if (idef->type == AST_SUBROUTINE && is_builtin_method(idef->subroutine_name))
   {
     fprintf(stderr, "Error: Subroutine '%s' conflicts with a built-in method name.\n", idef->subroutine_name);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   // Check for conflicting record or subroutine names
@@ -302,7 +302,7 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
           strcmp(existing_def->record_name, idef->record_name) == 0)
       {
         fprintf(stderr, "Error: Record '%s' already exists in scope `%s`.\n", idef->record_name, scope->scope_name);
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       else if (existing_def->type == AST_SUBROUTINE &&
                strcmp(existing_def->subroutine_name, idef->record_name) == 0 &&
@@ -311,7 +311,7 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
         // A record cannot have the same name and field count as an existing subroutine
         fprintf(stderr, "Error: Record '%s' with %d fields conflicts with subroutine '%s' with %d parameters in scope `%s`.\n",
                 idef->record_name, idef->field_count, existing_def->subroutine_name, existing_def->parameter_count, scope->scope_name);
-        exit(1);
+        exit(EXIT_FAILURE);
       }
     }
 
@@ -325,7 +325,7 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
         // A subroutine cannot have the same name and parameter count as an existing record
         fprintf(stderr, "Error: Subroutine '%s' with %d parameters conflicts with record '%s' with %d fields in scope `%s`.\n",
                 idef->subroutine_name, idef->parameter_count, existing_def->record_name, existing_def->field_count, scope->scope_name);
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       else if (existing_def->type == AST_SUBROUTINE &&
                strcmp(existing_def->subroutine_name, idef->subroutine_name) == 0 &&
@@ -334,7 +334,7 @@ ast_ *scope_add_instantiation_definition(scope_ *scope, ast_ *idef)
         // A subroutine cannot have the same name and parameter count as an existing subroutine
         fprintf(stderr, "Error: Subroutine '%s' with %d parameters already exists in scope `%s`.\n",
                 idef->subroutine_name, idef->parameter_count, scope->scope_name);
-        exit(1);
+        exit(EXIT_FAILURE);
       }
     }
   }
@@ -350,7 +350,7 @@ ast_ *scope_get_instantiation_definition(scope_ *scope, const char *iname)
   if (!scope || !iname)
   {
     fprintf(stderr, "Error: Invalid scope or instantiation name.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   for (size_t i = 0; scope->instantiation_definitions[i] != NULL; i++)
@@ -367,7 +367,7 @@ ast_ *scope_get_instantiation_definition(scope_ *scope, const char *iname)
     }
   }
   fprintf(stderr, "Error: No instantiation definition found for '%s' in scope `%s`\n", iname, scope->scope_name);
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
@@ -375,7 +375,7 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
   if (!scope || !vdef)
   {
     fprintf(stderr, "Error: Invalid scope or variable definition.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   // Variable name is accessed via vdef->lhs->variable_name
@@ -411,7 +411,7 @@ ast_ *scope_add_variable_definition(scope_ *scope, ast_ *vdef)
       if (scope->variable_definitions[i]->lhs->constant == 1)
       {
         fprintf(stderr, "Error: Cannot overwrite constant variable '%s'.\n", new_var_name);
-        exit(1);
+        exit(EXIT_FAILURE);
       }
 
       // Overwrite the existing variable definition
@@ -434,7 +434,7 @@ ast_ *scope_get_variable_definition(scope_ *scope, const char *vname)
   if (!scope || !vname)
   {
     fprintf(stderr, "Error: Invalid scope or variable name.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   for (size_t i = 0; scope->variable_definitions[i] != NULL; i++)
@@ -447,5 +447,5 @@ ast_ *scope_get_variable_definition(scope_ *scope, const char *vname)
   }
 
   fprintf(stderr, "Error: Variable definition `%s` not found in scope `%s`.\n", vname, scope->scope_name);
-  exit(1); // Variable not found
+  exit(EXIT_FAILURE); // Variable not found
 }

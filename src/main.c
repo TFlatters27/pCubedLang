@@ -13,7 +13,7 @@
 void print_help()
 {
   printf("Usage:\np3 <filename> [--debug]\n");
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[])

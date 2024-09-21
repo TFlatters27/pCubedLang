@@ -120,7 +120,7 @@ ast_ *deep_copy(ast_ *original)
   ast_ *copy = init_ast(original->type);
   if (copy == NULL)
   {
-    return NULL; // Return NULL if memory allocation failed
+    return NULL;
   }
 
   // Copy simple fields
