@@ -243,6 +243,17 @@ int compare_ast_literals(ast_ *a, ast_ *b)
   return 0; // Fallback, in case no match was found
 }
 
+int modulo_Euclidean(int a, int b)
+{
+  int m = a % b;
+  if (m < 0)
+  {
+    // m += (b < 0) ? -b : b; // avoid this form: it is UB when b == INT_MIN
+    m = (b < 0) ? m - b : m + b;
+  }
+  return m;
+}
+
 ast_ *handle_len_method(interpreter_ *interpreter, ast_ *node)
 {
   if (node->arguments_count != 1)
@@ -1099,6 +1110,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
     {
       ast_ *result = init_ast(AST_INTEGER);
       result->int_value.value = -(right_val->int_value.value);
+      // printf("-1 * %d\n", right_val->int_value.value);
       result->int_value.null = 0;
       return result;
     }
@@ -1106,6 +1118,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
     {
       ast_ *result = init_ast(AST_REAL);
       result->real_value.value = -(right_val->real_value.value);
+      // printf("-1.0 * %.2f\n", right_val->real_value.value);
       result->real_value.null = 0;
       return result;
     }
@@ -1130,6 +1143,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       {
         ast_ *result = init_ast(AST_INTEGER);
         result->int_value.value = left_val->int_value.value + right_val->int_value.value;
+        // printf("%d + %d\n", left_val->int_value.value, right_val->int_value.value);
         result->int_value.null = 0;
         return result;
       }
@@ -1137,6 +1151,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
       {
         ast_ *result = init_ast(AST_REAL);
         result->real_value.value = left_val->real_value.value + right_val->real_value.value;
+        // printf("%.2f + %.2f\n", left_val->real_value.value, right_val->real_value.value);
         result->real_value.null = 0;
         return result;
       }
@@ -1292,7 +1307,7 @@ ast_ *interpreter_process_arithmetic_expression(interpreter_ *interpreter, ast_ 
     if (left_val->type == AST_INTEGER && right_val->type == AST_INTEGER)
     {
       ast_ *result = init_ast(AST_INTEGER);
-      result->int_value.value = left_val->int_value.value % right_val->int_value.value;
+      result->int_value.value = modulo_Euclidean(left_val->int_value.value, right_val->int_value.value);
       result->int_value.null = 0;
       return result;
     }

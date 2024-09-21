@@ -108,6 +108,7 @@ OUTPUT 'Sum of the values in primes is', total
 
 sum <- 1
 sum <- sum + 1
+a <- 4.0
 square <- a^2.0
 mod <- 7 MOD i
 

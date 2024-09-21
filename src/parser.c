@@ -352,173 +352,174 @@ ast_ *parse_literal(parser_ *parser, scope_ *scope)
   }
   return expression;
 }
-
-// Helper function to handle arithmetic operations
-ast_ *parse_arithmetic_operation(parser_ *parser, ast_ *left, scope_ *scope)
-{
-  // Check if we're dealing with a unary operator
-  if (!left && parser->current_token->type == TOKEN_ARITH_OP && strcmp(parser->current_token->value, "-") == 0)
-  {
-    parser_expect(parser, TOKEN_ARITH_OP); // Consume the unary minus
-    ast_ *right_expression = parse_expression(parser, scope);
-
-    // Ensure it's an acceptable type for unary minus
-    if (right_expression->type != AST_INTEGER && right_expression->type != AST_REAL && right_expression->type != AST_VARIABLE)
-    {
-      fprintf(stderr, "Type error: Unary minus can only be applied to INT, REAL, or ID\n");
-      exit(EXIT_FAILURE);
-    }
-
-    ast_ *unary_expression = init_ast(AST_ARITHMETIC_EXPRESSION);
-    unary_expression->op = strdup("-");
-    unary_expression->right = right_expression;
-    set_scope(unary_expression, scope);
-
-    return unary_expression;
-  }
-
-  // Handle binary arithmetic operation
-  ast_ *arith_op = init_ast(AST_ARITHMETIC_EXPRESSION);
-  arith_op->op = strdup(parser->current_token->value);
-  parser_expect(parser, TOKEN_ARITH_OP); // Consume the operator
-
-  ast_ *right_expression = parse_expression(parser, scope); // Get the right-hand expression
-
-  if (!left || !right_expression)
-  {
-    fprintf(stderr, "Type error: Invalid expression for arithmetic operator '%s'\n", arith_op->op);
-    exit(EXIT_FAILURE);
-  }
-
-  arith_op->left = left;
-  arith_op->right = right_expression;
-  set_scope(arith_op, scope);
-  return arith_op;
-}
-
-// Helper function to handle relational operations
-ast_ *parse_relational_operation(parser_ *parser, ast_ *left, scope_ *scope)
-{
-  ast_ *rel_op = init_ast(AST_BOOLEAN_EXPRESSION);
-  rel_op->op = strdup(parser->current_token->value);
-  parser_expect(parser, TOKEN_REL_OP); // Consume the operator
-
-  ast_ *right_expression = parse_expression(parser, scope); // Get the right-hand expression
-
-  if (!left || !right_expression)
-  {
-    fprintf(stderr, "Type error: Invalid expression for relational operator '%s'\n", rel_op->op);
-    exit(EXIT_FAILURE);
-  }
-
-  rel_op->left = left;
-  rel_op->right = right_expression;
-  set_scope(rel_op, scope);
-  return rel_op;
-}
-
-// Helper function to handle boolean operations
-ast_ *parse_boolean_operation(parser_ *parser, ast_ *left, scope_ *scope)
-{
-  // Check if it's a unary NOT operation
-  if (!left && parser->current_token->type == TOKEN_BOOL_OP && strcmp(parser->current_token->value, "NOT") == 0)
-  {
-    parser_expect(parser, TOKEN_BOOL_OP); // Consume the NOT operator
-    ast_ *right_expression = parse_expression(parser, scope);
-
-    // Ensure it's an acceptable type for unary NOT
-    if (right_expression->type != AST_BOOLEAN_EXPRESSION && right_expression->type != AST_VARIABLE)
-    {
-      fprintf(stderr, "Type error: NOT can only be applied to BOOLEAN expressions or ID\n");
-      exit(EXIT_FAILURE);
-    }
-
-    ast_ *unary_expression = init_ast(AST_BOOLEAN_EXPRESSION);
-    unary_expression->op = strdup("NOT");
-    unary_expression->right = right_expression;
-    set_scope(unary_expression, scope);
-    return unary_expression;
-  }
-
-  // Handle binary boolean operation
-  ast_ *bool_op = init_ast(AST_BOOLEAN_EXPRESSION);
-  bool_op->op = strdup(parser->current_token->value);
-  parser_expect(parser, TOKEN_BOOL_OP); // Consume the operator
-
-  ast_ *right_expression = parse_expression(parser, scope); // Get the right-hand expression
-
-  if (!left || !right_expression)
-  {
-    fprintf(stderr, "Type error: Invalid expression for boolean operator '%s'\n", bool_op->op);
-    exit(EXIT_FAILURE);
-  }
-
-  bool_op->left = left;
-  bool_op->right = right_expression;
-  set_scope(bool_op, scope);
-  return bool_op;
-}
-
-// Main expression parsing function
-ast_ *parse_expression(parser_ *parser, scope_ *scope)
+// Helper function for primary expressions
+ast_ *parse_primary_expression(parser_ *parser, scope_ *scope)
 {
   ast_ *expression = NULL;
 
-  // Handle parentheses first (highest precedence)
+  // Handle parentheses (highest precedence)
   if (parser->current_token->type == TOKEN_LPAREN)
   {
     parser_expect(parser, TOKEN_LPAREN);          // Consume '('
     expression = parse_expression(parser, scope); // Parse the inner expression
     parser_expect(parser, TOKEN_RPAREN);          // Consume ')'
   }
+  // Handle variables, arrays, or instantiation
+  else if (parser->current_token->type == TOKEN_ID)
+  {
+    expression = parse_variable_or_access(parser, scope);
+  }
+  // Handle literals
   else
   {
-    // Handle variables, arrays, or instantiation
-    if (parser->current_token->type == TOKEN_ID)
-    {
-      expression = parse_variable_or_access(parser, scope);
-    }
-    // Handle literals
-    else
-    {
-      expression = parse_literal(parser, scope);
-    }
-  }
-
-  // Handle arithmetic operations first (highest precedence)
-  while (parser->current_token->type == TOKEN_ARITH_OP)
-  {
-    expression = parse_arithmetic_operation(parser, expression, scope);
-  }
-
-  // Handle relational operations next
-  if (parser->current_token->type == TOKEN_REL_OP)
-  {
-    expression = parse_relational_operation(parser, expression, scope);
-  }
-
-  // Handle boolean operations (lowest precedence)
-  if (parser->current_token->type == TOKEN_BOOL_OP)
-  {
-    expression = parse_boolean_operation(parser, expression, scope);
-  }
-
-  if (!expression)
-  {
-    // Handle unexpected tokens with an error
-    const char *found_type = token_type_to_string(parser->current_token->type);
-    const char *found_value = parser->current_token->value;
-    int line = parser->lexer->line;
-    int column = parser->lexer->column;
-
-    // Print an informative error message
-    fprintf(stderr, "Parse Error at line %d, column %d:\n", line, column);
-    fprintf(stderr, "  Unexpected token: `%s` (value: `%s`).\n", found_type, found_value);
-
-    exit(EXIT_FAILURE); // Terminate on error
+    expression = parse_literal(parser, scope);
   }
 
   return expression;
+}
+
+// Helper function to handle unary operations (e.g., - or NOT)
+ast_ *parse_unary_expression(parser_ *parser, scope_ *scope)
+{
+  ast_ *expression = NULL;
+
+  if (parser->current_token->type == TOKEN_ARITH_OP && strcmp(parser->current_token->value, "-") == 0)
+  {
+    // Handle unary minus
+    parser_expect(parser, TOKEN_ARITH_OP);                // Consume '-'
+    expression = parse_primary_expression(parser, scope); // Parse right side
+    ast_ *unary_expression = init_ast(AST_ARITHMETIC_EXPRESSION);
+    unary_expression->op = strdup("-");
+    unary_expression->right = expression;
+    return unary_expression;
+  }
+  else if (parser->current_token->type == TOKEN_BOOL_OP && strcmp(parser->current_token->value, "NOT") == 0)
+  {
+    // Handle unary NOT
+    parser_expect(parser, TOKEN_BOOL_OP);                 // Consume 'NOT'
+    expression = parse_primary_expression(parser, scope); // Parse right side
+    ast_ *unary_expression = init_ast(AST_BOOLEAN_EXPRESSION);
+    unary_expression->op = strdup("NOT");
+    unary_expression->right = expression;
+    return unary_expression;
+  }
+
+  // If no unary operation, fall back to primary expression
+  return parse_primary_expression(parser, scope);
+}
+
+// Helper function for exponentiation
+ast_ *parse_exponentiation_expression(parser_ *parser, scope_ *scope)
+{
+  ast_ *left = parse_unary_expression(parser, scope);
+
+  // Handle exponentiation (highest precedence)
+  while (parser->current_token->type == TOKEN_ARITH_OP && strcmp(parser->current_token->value, "^") == 0)
+  {
+    ast_ *op_node = init_ast(AST_ARITHMETIC_EXPRESSION);
+    op_node->op = strdup(parser->current_token->value);
+    op_node->left = left;
+
+    parser_expect(parser, TOKEN_ARITH_OP); // Consume '^'
+
+    op_node->right = parse_unary_expression(parser, scope); // Parse the right side
+    left = op_node;                                         // Right associativity for exponentiation
+  }
+
+  return left;
+}
+
+// Helper function for multiplication, division, modulus
+ast_ *parse_multiplication_expression(parser_ *parser, scope_ *scope)
+{
+  ast_ *left = parse_exponentiation_expression(parser, scope);
+
+  // Handle multiplication, division, modulus
+  while (parser->current_token->type == TOKEN_ARITH_OP &&
+         (strcmp(parser->current_token->value, "*") == 0 || strcmp(parser->current_token->value, "/") == 0 ||
+          strcmp(parser->current_token->value, "MOD") == 0 || strcmp(parser->current_token->value, "DIV") == 0))
+  {
+    ast_ *op_node = init_ast(AST_ARITHMETIC_EXPRESSION);
+    op_node->op = strdup(parser->current_token->value);
+    op_node->left = left;
+
+    parser_expect(parser, TOKEN_ARITH_OP); // Consume the operator
+
+    op_node->right = parse_exponentiation_expression(parser, scope); // Parse the right side
+    left = op_node;                                                  // Left associativity
+  }
+
+  return left;
+}
+
+// Helper function for addition and subtraction
+ast_ *parse_addition_expression(parser_ *parser, scope_ *scope)
+{
+  ast_ *left = parse_multiplication_expression(parser, scope);
+
+  // Handle addition, subtraction
+  while (parser->current_token->type == TOKEN_ARITH_OP &&
+         (strcmp(parser->current_token->value, "+") == 0 || strcmp(parser->current_token->value, "-") == 0))
+  {
+    ast_ *op_node = init_ast(AST_ARITHMETIC_EXPRESSION);
+    op_node->op = strdup(parser->current_token->value);
+    op_node->left = left;
+
+    parser_expect(parser, TOKEN_ARITH_OP); // Consume the operator
+
+    op_node->right = parse_multiplication_expression(parser, scope); // Parse the right side
+    left = op_node;                                                  // Left associativity
+  }
+
+  return left;
+}
+
+// Helper function for relational expressions
+ast_ *parse_relational_expression(parser_ *parser, scope_ *scope)
+{
+  ast_ *left = parse_addition_expression(parser, scope);
+
+  // Handle relational operators (lower precedence than arithmetic)
+  if (parser->current_token->type == TOKEN_REL_OP)
+  {
+    ast_ *rel_op = init_ast(AST_BOOLEAN_EXPRESSION);
+    rel_op->op = strdup(parser->current_token->value);
+    rel_op->left = left;
+    parser_expect(parser, TOKEN_REL_OP);                      // Consume the operator
+    rel_op->right = parse_addition_expression(parser, scope); // Parse the right side
+
+    return rel_op;
+  }
+
+  return left; // No relational operator found
+}
+
+// Helper function for boolean expressions
+ast_ *parse_boolean_expression(parser_ *parser, scope_ *scope)
+{
+  ast_ *left = parse_relational_expression(parser, scope);
+
+  // Handle boolean operators (lowest precedence)
+  while (parser->current_token->type == TOKEN_BOOL_OP &&
+         (strcmp(parser->current_token->value, "AND") == 0 || strcmp(parser->current_token->value, "OR") == 0))
+  {
+    ast_ *bool_op = init_ast(AST_BOOLEAN_EXPRESSION);
+    bool_op->op = strdup(parser->current_token->value);
+    bool_op->left = left;
+
+    parser_expect(parser, TOKEN_BOOL_OP); // Consume the operator
+
+    bool_op->right = parse_relational_expression(parser, scope); // Parse the right side
+    left = bool_op;                                              // Left associativity
+  }
+
+  return left;
+}
+
+// Main expression parsing function with precedence handling
+ast_ *parse_expression(parser_ *parser, scope_ *scope)
+{
+  return parse_boolean_expression(parser, scope); // Boolean expressions have the lowest precedence
 }
 
 ast_ *handle_id(parser_ *parser, scope_ *scope)

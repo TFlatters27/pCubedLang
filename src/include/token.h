@@ -20,12 +20,11 @@ enum token_type
   TOKEN_ARITH_OP = 1 << 14,  // 16384 : +|-|*|/|^|DIV|MOD
   TOKEN_REL_OP = 1 << 15,    // 32768 : < | > | = | != | <= | >=
   TOKEN_BOOL_OP = 1 << 16,   // 65536 : AND | OR | NOT
-  TOKEN_UN_OP = 1 << 17,     // 131072 : - (unary operator)
-  TOKEN_COMMA = 1 << 18,     // 262144 : ,
-  TOKEN_COLON = 1 << 19,     // 524288 : :
-  TOKEN_FULLSTOP = 1 << 20,  // 1048576 : .
-  TOKEN_PIPE = 1 << 21,      // 2097152 : |
-  TOKEN_EOF = 1 << 22        // 4194304 : ^D
+  TOKEN_COMMA = 1 << 17,     // 262144 : ,
+  TOKEN_COLON = 1 << 18,     // 524288 : :
+  TOKEN_FULLSTOP = 1 << 19,  // 1048576 : .
+  TOKEN_PIPE = 1 << 20,      // 2097152 : |
+  TOKEN_EOF = 1 << 21        // 4194304 : ^D
 };
 
 typedef struct TOKEN_STRUCT

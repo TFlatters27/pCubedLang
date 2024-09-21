@@ -9,7 +9,7 @@ SUBROUTINE FizzBuzz(i)
     IF (a MOD 5) = 0 THEN
       str <- str + "Buzz"
     ENDIF
-    IF ((a MOD 5) != 0) AND ((a MOD 3) != 0) THEN
+    IF (a MOD 5 != 0) AND (a MOD 3 != 0) THEN
       str <- str + INT_TO_STRING(a)
     ENDIF
     OUTPUT str
